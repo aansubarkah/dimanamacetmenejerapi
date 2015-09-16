@@ -1,7 +1,7 @@
 <?php
-namespace App\Controller\Manager;
+namespace App\Controller;
 
-use App\Controller\Manager\AppController;
+use App\Controller\AppController;
 
 /**
  * Respondents Controller

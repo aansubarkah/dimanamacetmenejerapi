@@ -4,20 +4,20 @@ namespace App\Controller;
 use App\Controller\AppController;
 
 /**
- * Places Controller
+ * Categories Controller
  *
- * @property \App\Model\Table\PlacesTable $Places
+ * @property \App\Model\Table\CategoriesTable $Categories
  */
-class PlacesController extends AppController
+class CategoriesController extends AppController
 {
     public $limit = 25;
 
     public $paginate = [
-        'fields' => ['Places.id', 'Places.name', 'Places.active'],
+        'fields' => ['Categories.id', 'Categories.name', 'Categories.active'],
         'limit' => 25,
         'page' => 0,
         'order' => [
-            'Places.name' => 'asc'
+            'Categories.name' => 'asc'
         ]
     ];
 
@@ -26,7 +26,6 @@ class PlacesController extends AppController
         parent::initialize();
         $this->loadComponent('Paginator');
     }
-
     /**
      * Index method
      *
@@ -60,29 +59,29 @@ class PlacesController extends AppController
             }
 
             $fetchDataOptions = [
-                'conditions' => ['Places.active' => true],
-                'order' => ['Places.name' => 'ASC'],
+                'conditions' => ['Categories.active' => true],
+                'order' => ['Categories.name' => 'ASC'],
                 'limit' => $limit,
                 'page' => $offset
             ];
 
             if (!empty(trim($query))) {
-                $fetchDataOptions['conditions']['LOWER(Places.name) LIKE'] = '%' . strtolower($query) . '%';
+                $fetchDataOptions['conditions']['LOWER(Categories.name) LIKE'] = '%' . strtolower($query) . '%';
             }
 
             $this->paginate = $fetchDataOptions;
-            $places = $this->paginate('Places');
+            $categories = $this->paginate('Categories');
 
-            $allPlaces = $this->Places->find('all', $fetchDataOptions);
-            $total = $allPlaces->count();
+            $allCategories = $this->Categories->find('all', $fetchDataOptions);
+            $total = $allCategories->count();
 
             $meta = [
                 'total' => $total
             ];
             $this->set([
-                'places' => $places,
+                'categories' => $categories,
                 'meta' => $meta,
-                '_serialize' => ['places', 'meta']
+                '_serialize' => ['categories', 'meta']
             ]);
         }
     }
@@ -90,16 +89,16 @@ class PlacesController extends AppController
     /**
      * View method
      *
-     * @param string|null $id Place id.
+     * @param string|null $id Weather id.
      * @return void
      * @throws \Cake\Network\Exception\NotFoundException When record not found.
      */
     public function view($id = null)
     {
-        $place = $this->Places->get($id);
+        $category = $this->Categories->get($id);
         $this->set([
-            'place' => $place,
-            '_serialize' => ['place']
+            'category' => $category,
+            '_serialize' => ['category']
         ]);
     }
 
@@ -110,68 +109,69 @@ class PlacesController extends AppController
      */
     public function add()
     {
+        if(isset($this->request->data['category']['active'])) unset($this->request->data['category']['active']);
+
+        $category = $this->Categories->newEntity($this->request->data['category']);
         if ($this->request->is('post')) {
-            if (isset($this->request->data['place']['active'])) unset($this->request->data['place']['active']);
-            if (isset($this->request->data['place']['id'])) unset($this->request->data['place']['id']);
-            $this->request->data['place']['active'] = true;
-
-            $place = $this->Places->newEntity($this->request->data['place']);
-            $this->Places->save($place);
-
-            $this->set([
-                'place' => $place,
-                '_serialize' => ['place']
-            ]);
-        }
-    }
-
-    /**
-     * Edit method
-     *
-     * @param string|null $id Place id.
-     * @return void Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
-     */
-    public function edit($id = null)
-    {
-        $place = $this->Places->get($id);
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            if (isset($this->request->data['place']['active'])) unset($this->request->data['place']['active']);
-
-            $place = $this->Places->patchEntity($place, $this->request->data['place']);
-            if ($this->Places->save($place)) {
+            if ($this->Categories->save($category)) {
                 $message = 'Saved';
             } else {
                 $message = 'Error';
             }
         }
         $this->set([
-            'place' => $message,
-            '_serialize' => ['place']
+            'category' => $message,
+            '_serialize' => ['category']
+        ]);
+    }
+
+    /**
+     * Edit method
+     *
+     * @param string|null $id Weather id.
+     * @return void Redirects on successful edit, renders view otherwise.
+     * @throws \Cake\Network\Exception\NotFoundException When record not found.
+     */
+    public function edit($id = null)
+    {
+        $category = $this->Categories->get($id);
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            if(isset($this->request->data['category']['active'])) unset($this->request->data['category']['active']);
+
+            $category = $this->Categories->patchEntity($category, $this->request->data['category']);
+            if ($this->Categories->save($category)) {
+                $message = 'Saved';
+            } else {
+                $message = 'Error';
+            }
+        }
+        $this->set([
+            'category' => $message,
+            '_serialize' => ['category']
         ]);
     }
 
     /**
      * Delete method
      *
-     * @param string|null $id Place id.
+     * @param string|null $id Weather id.
      * @return void Redirects to index.
      * @throws \Cake\Network\Exception\NotFoundException When record not found.
      */
     public function delete($id = null)
     {
-        $place = $this->Places->get($id);
+        $category = $this->Categories->get($id);
         if ($this->request->is(['delete'])) {
-            $place->active = false;
-            if ($this->Places->save($place)) {
+            $category->active = false;
+            if ($this->Categories->save($category)) {
                 $message = 'Deleted';
             } else {
                 $message = 'Error';
             }
         }
         $this->set([
-            'place' => $place,
-            '_serialize' => ['place']
+            'category' => $message,
+            '_serialize' => ['category']
         ]);
     }
 
@@ -186,25 +186,26 @@ class PlacesController extends AppController
         ];
 
         $fetchDataOptions = [
-            'order' => ['Places.name' => 'ASC'],
+            'order' => ['Categories.name' => 'ASC'],
             'limit' => $limit
         ];
 
         $query = trim(strtolower($name));
 
         if (!empty($query)) {
-            $fetchDataOptions['conditions']['LOWER(Places.name) LIKE'] = '%' . $query . '%';
+            $fetchDataOptions['conditions']['LOWER(Categories.name) LIKE'] = '%' . $query . '%';
         }
+        $fetchDataOptions['conditions']['active'] = true;
 
-        $place = $this->Places->find('all', $fetchDataOptions);
+        $category = $this->Categories->find('all', $fetchDataOptions);
 
-        if ($place->count() > 0) {
-            $data = $place;
+        if ($category->count() > 0) {
+            $data = $category;
         }
 
         $this->set([
-            'place' => $data,
-            '_serialize' => ['place']
+            'category' => $data,
+            '_serialize' => ['category']
         ]);
     }
 }
