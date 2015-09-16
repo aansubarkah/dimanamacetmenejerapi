@@ -2,6 +2,7 @@
 namespace App\Controller;
 
 use App\Controller\AppController;
+use Cake\Event\Event;
 use Cake\ORM\TableRegistry;
 use TwitterAPIExchange;
 
@@ -12,6 +13,12 @@ use TwitterAPIExchange;
  */
 class TwitsController extends AppController
 {
+    public function beforeFilter(Event $event)
+    {
+        parent::beforeFilter($event);
+        $this->Auth->allow(['mentionToDB']);
+    }
+
     public $settingsTwitter = [
         'oauth_access_token' => '3555146480-sXfyGZDtrIDdzOMd1tt8srNWUijs7nCFfeag349',
         'oauth_access_token_secret' => 'fKQN5cTbpDEvic613JtfHoVz7LC9dlSfUsP0yohuwboxY',
@@ -148,12 +155,12 @@ class TwitsController extends AppController
             }
         }
 
-        $this->set([
+        /*$this->set([
             'latestTwitID' => $getLatestTwitID,
             'data' => $dataToDisplay,
             'meta' => $countDataStream,
             '_serialize' => ['latestTwitID', 'data', 'meta']
-        ]);
+        ]);*/
     }
 
     private function findToSaveRespondent($twitterUserID, $twitterName, $twitterScreenName)

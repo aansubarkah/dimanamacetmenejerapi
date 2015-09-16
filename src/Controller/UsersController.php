@@ -18,7 +18,6 @@ class UsersController extends AppController
     {
         parent::beforeFilter($event);
         $this->Auth->allow(['add', 'token']);
-        //$this->Auth->allow(['token']);
     }
 
     public $limit = 25;

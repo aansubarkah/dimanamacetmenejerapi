@@ -40,7 +40,7 @@ class TwitterShell extends Shell
 
     public function main()
     {
-        //$this->out('Hello World!');
+        $this->out('Hello World!');
         //$this->createFile('lorem.txt','halo dunia1');
         //$dir = new Folder('app/tmp');
         //$logFile = new File('../tmp/Twitter.txt', true, 0644);
@@ -153,3 +153,5 @@ class TwitterShell extends Shell
         return $respondent_id;
     }
 }
+//cronjob
+//php -c /home/dmmctcom/public_html/php.ini cd /home/dmmctcom/public_html/apimimin && bin/cake twitter > /home/dmmctcom/public_html/apimimin/tmp/logs/cron_logs.txt 2>&1
