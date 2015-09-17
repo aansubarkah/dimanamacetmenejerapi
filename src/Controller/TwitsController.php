@@ -111,15 +111,17 @@ class TwitsController extends AppController
                         //first get respondent_id
                         $respondent_id = $this->findToSaveRespondent($data['user']['id'], $data['user']['name'], $data['user']['screen_name']);
 
+                        $info = trim(str_replace('@dimanamacetid', '', $data['text']));
                         $dataToSave = [
                             //$dataToDisplay[] = [
                             'category_id' => 1,//macet
                             'user_id' => 4,//twitter robot
                             'respondent_id' => $respondent_id,
                             'weather_id' => 1,//cerah
-                            'info' => trim(str_replace('@dimanamacetid', '', $data['text'])),
+                            'info' => $info,
                             'twitID' => $data['id'],
                             'twitCreated' => date("Y-m-d H:i:s", strtotime($data['created_at'])),//@todo this is not working, fix
+                            'twitURL' => null,
                             'twitPlaceID' => $data['place']['id'],
                             'twitPlaceName' => $data['place']['name'],
                             'isTwitPlacePrecise' => 0,
@@ -135,6 +137,10 @@ class TwitsController extends AppController
                         ) {
                             $dataToSave['twitImage'] = $data['extended_entities']['media'][0]['media_url'];
                         }
+
+                        // if url do exists
+                        $twitURL = $this->findURLonText($info);
+                        $dataToSave['twitURL'] = $twitURL;
 
                         if ($data['geo'] !== null) {
                             $dataToSave['lat'] = $data['geo']['coordinates'][0];
@@ -161,6 +167,45 @@ class TwitsController extends AppController
             'meta' => $countDataStream,
             '_serialize' => ['latestTwitID', 'data', 'meta']
         ]);*/
+    }
+
+    private function findURLonText($text)
+    {
+        $regex = '$\b(https?|ftp|file)://[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|]$i';
+        $return = null;
+
+        preg_match_all($regex, $text, $result, PREG_PATTERN_ORDER);
+        $A = $result[0];
+
+        foreach ($A as $B) {
+            $URL = $this->getRealURL($B);
+            $return = $URL;
+        }
+        return $return;
+    }
+
+    private function getRealURL($url)
+    {
+        $options = array(
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_USERAGENT => "spider",
+            CURLOPT_AUTOREFERER => true,
+            CURLOPT_CONNECTTIMEOUT => 120,
+            CURLOPT_TIMEOUT => 120,
+            CURLOPT_MAXREDIRS => 10,
+        );
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, $options);
+        $content = curl_exec($ch);
+        $err = curl_errno($ch);
+        $errmsg = curl_error($ch);
+        $header = curl_getinfo($ch);
+        curl_close($ch);
+        return $header['url'];
     }
 
     private function findToSaveRespondent($twitterUserID, $twitterName, $twitterScreenName)
