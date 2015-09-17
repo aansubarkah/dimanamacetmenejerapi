@@ -82,8 +82,11 @@ class MarkerviewsTable extends Table
             ->allowEmpty('twitID');
 
         $validator
-            ->add('twitCreated', 'valid', ['rule' => 'datetime'])
-            ->allowEmpty('twitCreated');
+            ->add('twitTime', 'valid', ['rule' => 'datetime'])
+            ->allowEmpty('twitTime');
+
+        $validator
+            ->allowEmpty('twitURL');
 
         $validator
             ->allowEmpty('twitPlaceID');
@@ -149,6 +152,11 @@ class MarkerviewsTable extends Table
             ->add('isTwitImageExist', 'valid', ['rule' => 'numeric'])
             ->requirePresence('isTwitImageExist', 'create')
             ->notEmpty('isTwitImageExist');
+
+        $validator
+            ->add('isTwitURLExist', 'valid', ['rule' => 'numeric'])
+            ->requirePresence('isTwitURLExist', 'create')
+            ->notEmpty('isTwitURLExist');
 
         $validator
             ->add('isPlaceNameExist', 'valid', ['rule' => 'numeric'])

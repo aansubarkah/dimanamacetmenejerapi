@@ -22,7 +22,8 @@ use Cake\ORM\Entity;
  * @property string $info
  * @property int $twitID
  * @property string $twitPlaceID
- * @property \Cake\I18n\Time $twitCreated
+ * @property \Cake\I18n\Time $twitTime
+ * @property string $twitURL
  * @property string $twitPlaceName
  * @property bool $isTwitPlacePrecise
  * @property string $twitImage

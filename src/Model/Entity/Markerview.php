@@ -22,7 +22,8 @@ use Cake\ORM\Entity;
  * @property string $info
  * @property int $twitUserID
  * @property int $twitID
- * @property \Cake\I18n\Time $twitCreated
+ * @property \Cake\I18n\Time $twitTime
+ * @property string $twitURL
  * @property string $twitPlaceID
  * @property string $twitPlaceName
  * @property bool $isTwitPlacePrecise
@@ -40,6 +41,7 @@ use Cake\ORM\Entity;
  * @property int $isTwitUserIDExist
  * @property int $isTwitExist
  * @property int $isTwitImageExist
+ * @property int $isTwitURLExist
  * @property int $isPlaceNameExist
  */
 class Markerview extends Entity

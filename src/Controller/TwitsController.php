@@ -47,15 +47,17 @@ class TwitsController extends AppController
             ->buildOauth($url, $requestMethod)
             ->performRequest();
 
-        $data = json_decode($data);
+        $data = json_decode($data, true);
         $meta = [
             'total' => count($data)
         ];
+        $firstDate = date('Y-m-d H:i:s', strtotime($data[0]['created_at']));
 
         $this->set([
+            'first_date' => $firstDate,
             'mentions' => $data,
             'meta' => $meta,
-            '_serialize' => ['mentions', 'meta']
+            '_serialize' => ['first_date', 'mentions', 'meta']
         ]);
     }
 
@@ -118,9 +120,8 @@ class TwitsController extends AppController
                             'user_id' => 4,//twitter robot
                             'respondent_id' => $respondent_id,
                             'weather_id' => 1,//cerah
-                            'info' => $info,
                             'twitID' => $data['id'],
-                            'twitCreated' => date("Y-m-d H:i:s", strtotime($data['created_at'])),//@todo this is not working, fix
+                            'twitTime' => gmdate("Y-m-d H:i:s", strtotime($data['created_at'])),//@todo this is not working, fix
                             'twitURL' => null,
                             'twitPlaceID' => $data['place']['id'],
                             'twitPlaceName' => $data['place']['name'],
@@ -140,8 +141,19 @@ class TwitsController extends AppController
 
                         // if url do exists
                         $twitURL = $this->findURLonText($info);
-                        $dataToSave['twitURL'] = $twitURL;
+                        if ($twitURL !== null) {
+                            $dataToSave['twitURL'] = $twitURL;
+                            $info = str_ireplace($twitURL, "", $info);
+                            $info = trim($info);
+                        }
 
+                        // category_id and weather_id based on twit
+                        $twitHashtagCategoryWeather = $this->findHashtagonText($info);
+                        $dataToSave['category_id'] = $twitHashtagCategoryWeather[0];
+                        $dataToSave['weather_id'] = $twitHashtagCategoryWeather[1];
+                        $dataToSave['info'] = $twitHashtagCategoryWeather[2];
+
+                        // if get precise location
                         if ($data['geo'] !== null) {
                             $dataToSave['lat'] = $data['geo']['coordinates'][0];
                             $dataToSave['lng'] = $data['geo']['coordinates'][1];
@@ -169,18 +181,69 @@ class TwitsController extends AppController
         ]);*/
     }
 
+    // to find category_id and weather_id
+    // @todo #Lapor #Tanya
+    private function findHashtagonText($text)
+    {
+        $newText = $text;
+        $category_id = 1;//macet
+        $weather_id = 1;//cerah
+        preg_match_all('/#([^\s]+)/', $text, $matches);
+
+        foreach ($matches[1] as $data) {
+            $data = strtolower($data);
+            switch ($data) {
+                case 'padat':
+                    $category_id = 2;
+                    break;
+                case 'lancar':
+                    $category_id = 3;
+                    break;
+                case 'mendung':
+                    $weather_id = 2;
+                    break;
+                case 'hujan deras':
+                    $weather_id = 3;
+                    break;
+                case 'hujanderas':
+                    $weather_id = 3;
+                    break;
+                case 'deras':
+                    $weather_id = 3;
+                    break;
+                case 'gerimis':
+                    $weather_id = 4;
+                    break;
+                case 'hujan':
+                    $weather_id = 5;
+                    break;
+                default:
+                    $category_id = 1;
+                    $weather_id = 1;
+                    break;
+            }
+
+            //clean text from hashtag
+            $newText = str_ireplace($data, "", $newText);
+        }
+        $newText = str_replace("#", "", $newText);
+        $newText = trim($newText);
+
+        return [$category_id, $weather_id, $newText];
+    }
+
     private function findURLonText($text)
     {
         $regex = '$\b(https?|ftp|file)://[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|]$i';
         $return = null;
 
         preg_match_all($regex, $text, $result, PREG_PATTERN_ORDER);
-        $A = $result[0];
+        $return = $result[0];
 
-        foreach ($A as $B) {
-            $URL = $this->getRealURL($B);
-            $return = $URL;
-        }
+        //foreach ($A as $B) {
+        //    $URL = $this->getRealURL($B);
+        //    $return = $URL;
+        //}
         return $return;
     }
 
