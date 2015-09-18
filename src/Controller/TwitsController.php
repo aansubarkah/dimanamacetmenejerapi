@@ -5,6 +5,9 @@ use App\Controller\AppController;
 use Cake\Event\Event;
 use Cake\ORM\TableRegistry;
 use TwitterAPIExchange;
+use Cake\I18n\I18n;//cakephp need this to save datetime field
+use Cake\I18n\Time;//cakephp need this to save datetime field
+use Cake\Database\Type;//cakephp need this to save datetime field
 
 /**
  * Twits Controller
@@ -81,6 +84,7 @@ class TwitsController extends AppController
 
     public function mentionToDB()
     {
+        $this->autoRender = false;
         $this->Markers = TableRegistry::get('Markers');
 
         // first get the latest twitID from DB
@@ -114,6 +118,8 @@ class TwitsController extends AppController
                         $respondent_id = $this->findToSaveRespondent($data['user']['id'], $data['user']['name'], $data['user']['screen_name']);
 
                         $info = trim(str_replace('@dimanamacetid', '', $data['text']));
+                        $created_at = date("Y-m-d H:i:s", strtotime($data['created_at']));
+                        Type::build('datetime')->useLocaleParser();//cakephp need this to save datetime field
                         $dataToSave = [
                             //$dataToDisplay[] = [
                             'category_id' => 1,//macet
@@ -121,7 +127,7 @@ class TwitsController extends AppController
                             'respondent_id' => $respondent_id,
                             'weather_id' => 1,//cerah
                             'twitID' => $data['id'],
-                            'twitTime' => gmdate("Y-m-d H:i:s", strtotime($data['created_at'])),//@todo this is not working, fix
+                            'twitTime' => new Time($created_at),//cakephp use this to save datetime field
                             'twitURL' => null,
                             'twitPlaceID' => $data['place']['id'],
                             'twitPlaceName' => $data['place']['name'],
