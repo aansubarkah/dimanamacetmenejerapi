@@ -152,12 +152,13 @@ class TwitsController extends AppController
                             $info = str_ireplace($twitURL, "", $info);
                             $info = trim($info);
                         }
+                        $dataToSave['info'] = $info;
 
                         // category_id and weather_id based on twit
                         $twitHashtagCategoryWeather = $this->findHashtagonText($info);
                         $dataToSave['category_id'] = $twitHashtagCategoryWeather[0];
                         $dataToSave['weather_id'] = $twitHashtagCategoryWeather[1];
-                        $dataToSave['info'] = $twitHashtagCategoryWeather[2];
+                        //$dataToSave['info'] = $twitHashtagCategoryWeather[2];
 
                         // if get precise location
                         if ($data['geo'] !== null) {
@@ -191,7 +192,7 @@ class TwitsController extends AppController
     // @todo #Lapor #Tanya
     private function findHashtagonText($text)
     {
-        $newText = $text;
+        //$newText = $text;
         $category_id = 1;//macet
         $weather_id = 1;//cerah
         preg_match_all('/#([^\s]+)/', $text, $matches);
@@ -230,12 +231,13 @@ class TwitsController extends AppController
             }
 
             //clean text from hashtag
-            $newText = str_ireplace($data, "", $newText);
+            //$newText = str_ireplace($data, "", $newText);
         }
-        $newText = str_replace("#", "", $newText);
-        $newText = trim($newText);
+        //$newText = str_replace("#", "", $newText);
+        //$newText = trim($newText);
 
-        return [$category_id, $weather_id, $newText];
+        //return [$category_id, $weather_id, $newText];
+        return [$category_id, $weather_id];
     }
 
     private function findURLonText($text)
