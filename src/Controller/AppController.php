@@ -65,7 +65,7 @@ class AppController extends Controller
     {
         parent::beforeFilter($event);
         //$this->Auth->allow(['view', 'index', 'checkExistence', 'edit',
-        //    'delete', 'add', 'twit', 'twit1', 'mention','token', 'getMention', 'mentionToDB']);
+            //'delete', 'add', 'twit', 'twit1', 'mention','token', 'getMention', 'mentionToDB']);
         $this->Auth->allow(['token']);
     }
 }
