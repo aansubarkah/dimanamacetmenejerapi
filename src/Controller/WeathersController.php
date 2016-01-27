@@ -206,6 +206,7 @@ class WeathersController extends AppController
 
     public function checkExistence($name = null, $limit = 25)
     {
+        $this->loadModel('Weather');
         $data = [
             [
                 'id' => 0,
@@ -224,7 +225,7 @@ class WeathersController extends AppController
         if (!empty($query)) {
             $fetchDataOptions['conditions']['LOWER(Weather.name) LIKE'] = '%' . $query . '%';
         }
-        $fetchDataOptions['conditions']['active'] = true;
+        $fetchDataOptions['conditions']['Weather.active'] = true;
 
         $weather = $this->Weather->find('all', $fetchDataOptions);
 

@@ -1,5 +1,8 @@
 <?php
 namespace App\Controller;
+use Cake\I18n\I18n;//cakephp need this to save datetime field
+use Cake\I18n\Time;//cakephp need this to save datetime field
+use Cake\Database\Type;//cakephp need this to save datetime field
 
 use App\Controller\AppController;
 
@@ -134,6 +137,9 @@ class MarkersController extends AppController
             unset($this->request->data['marker']['created']);
             unset($this->request->data['marker']['modified']);
 
+            $now = date('Y-m-d H:i:s');
+            $this->request->data['marker']['twitTime'] = new Time($now);
+
             // if respondent not saved yet, create it first
             if ($this->request->data['marker']['respondent_id'] == 0) {
                 $respondentToSave = [
@@ -147,7 +153,7 @@ class MarkersController extends AppController
                 $this->request->data['marker']['respondent_id'] = $respondent->id;
             }
 
-            $this->request->data['marker']['user_id'] = 1;
+            //$this->request->data['marker']['user_id'] = 1;
             $marker = $this->Markers->newEntity($this->request->data['marker']);
             $this->Markers->save($marker);
 

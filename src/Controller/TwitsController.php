@@ -43,9 +43,9 @@ class TwitsController extends AppController
         //-7.256177, 112.752268
         /*
          *
-Jalan Jenderal Ahmad Yani
-Magelang Tengah, Kota Magelang, Jawa Tengah 56117
--7.473215, 110.218126
+         Jalan Jenderal Ahmad Yani
+         Magelang Tengah, Kota Magelang, Jawa Tengah 56117
+         -7.473215, 110.218126
          * */
         $geocode = '-6.171305,106.827967,100km';
         $Twitter = new TwitterAPIExchange($this->settingsTwitter);
@@ -114,9 +114,9 @@ Magelang Tengah, Kota Magelang, Jawa Tengah 56117
 
         /*
          *
-        Jalan Jenderal Ahmad Yani
-        Magelang Tengah, Kota Magelang, Jawa Tengah 56117
-        -7.473215, 110.218126
+         Jalan Jenderal Ahmad Yani
+         Magelang Tengah, Kota Magelang, Jawa Tengah 56117
+         -7.473215, 110.218126
          * */
         $geocode = '-7.473215,110.218126,1000km';
         $Twitter = new TwitterAPIExchange($this->settingsTwitter);
@@ -322,34 +322,34 @@ Magelang Tengah, Kota Magelang, Jawa Tengah 56117
         foreach ($matches[1] as $data) {
             $data = strtolower($data);
             switch ($data) {
-                case 'padat':
-                    $category_id = 2;
-                    break;
-                case 'lancar':
-                    $category_id = 3;
-                    break;
-                case 'mendung':
-                    $weather_id = 2;
-                    break;
-                case 'hujan deras':
-                    $weather_id = 3;
-                    break;
-                case 'hujanderas':
-                    $weather_id = 3;
-                    break;
-                case 'deras':
-                    $weather_id = 3;
-                    break;
-                case 'gerimis':
-                    $weather_id = 4;
-                    break;
-                case 'hujan':
-                    $weather_id = 5;
-                    break;
-                default:
-                    $category_id = 1;
-                    $weather_id = 1;
-                    break;
+            case 'padat':
+                $category_id = 2;
+                break;
+            case 'lancar':
+                $category_id = 3;
+                break;
+            case 'mendung':
+                $weather_id = 2;
+                break;
+            case 'hujan deras':
+                $weather_id = 3;
+                break;
+            case 'hujanderas':
+                $weather_id = 3;
+                break;
+            case 'deras':
+                $weather_id = 3;
+                break;
+            case 'gerimis':
+                $weather_id = 4;
+                break;
+            case 'hujan':
+                $weather_id = 5;
+                break;
+            default:
+                $category_id = 1;
+                $weather_id = 1;
+                break;
             }
 
             //clean text from hashtag
