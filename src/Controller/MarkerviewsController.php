@@ -97,10 +97,23 @@ class MarkerviewsController extends AppController
             $markerviews[$i]['category'] = $markerviews[$i]['category_id'];
         }
         *
-        */
+         */
+        // count user total posts
+        $userTotalMarkers = $this->Markerviews->find()
+            ->where(['Markerviews.user_id' => $this->Auth->user('id')])
+            ->count();
+
+        $userTotalToday = $this->Markerviews->find()
+            ->where([
+                'Markerviews.user_id' => $this->Auth->user('id'),
+                'DATE(created)' => 'CURDATE()'
+            ])
+            ->count();
 
         $meta = [
-            'total' => $total
+            'total' => $total,
+            'postByUser' => $userTotalMarkers,
+            'postToday' => $userTotalToday
         ];
         $this->set([
             'markerviews' => $markerviews,
