@@ -3,6 +3,7 @@ namespace App\Controller;
 use Cake\I18n\I18n;//cakephp need this to save datetime field
 use Cake\I18n\Time;//cakephp need this to save datetime field
 use Cake\Database\Type;//cakephp need this to save datetime field
+use TwitterAPIExchange;
 
 use App\Controller\AppController;
 
@@ -141,7 +142,7 @@ class MarkersController extends AppController
             $this->request->data['marker']['twitTime'] = new Time($now);
 
             // if respondent not saved yet, create it first
-            if ($this->request->data['marker']['respondent_id'] == 0) {
+            if ($this->request->data['marker']['respondent_id'] === 0) {
                 $respondentToSave = [
                     'name' => $this->request->data['marker']['respondentName'],
                     'contact' => $this->request->data['marker']['respondentContact'],
@@ -157,11 +158,56 @@ class MarkersController extends AppController
             $marker = $this->Markers->newEntity($this->request->data['marker']);
             $this->Markers->save($marker);
 
+            // post tweet
+            $this->convertPostToTweet($marker->id);
+
             $this->set([
                 'marker' => $marker,
                 '_serialize' => ['marker']
             ]);
         }
+    }
+
+    private function convertPostToTweet($id = null) {
+        //public function convertPostToTweet($id = null) {
+        //$this->autoRender = false;
+
+        if($id !== null) {
+            $marker = $this->Markers->find()
+                ->contain(['Respondents'])
+                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Respondents.name'])
+                ->where(['Markers.id' => $id])
+                ->first();
+
+            $this->postTweet($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name']);
+        }
+    }
+
+    private function postTweet($info = null, $lat = null, $lng = null, $respondent = null) {
+        $Twitter = new TwitterAPIExchange($this->settingsTwitter);
+
+        $url = $this->baseTwitterUrl . 'statuses/update.json';
+
+        $lat === null ? $lat = -7.256177 : $lat = $lat;
+        $lng === null ? $long = 112.752268 : $long = $lng;
+        $status = 'dimanamacet.com: ' . $info;
+        $status = $status . ' via: ' . $respondent;
+
+        $postfield = '?status=' . $status;
+        $postfield = $postfield . '&lat=' . $lat;
+        $postfield = $postfield . '&long=' . $long;
+        $postFields = [
+            'status' => $status,
+            'lat' => $lat,
+            'long' => $long
+        ];
+
+        $requestMethod = 'POST';
+
+        $exec = $Twitter->setPostfields($postFields)
+            ->buildOauth($url, $requestMethod)
+            ->performRequest();
+        //echo $exec;
     }
 
     /**

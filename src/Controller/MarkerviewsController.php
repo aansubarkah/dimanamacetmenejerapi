@@ -95,8 +95,8 @@ class MarkerviewsController extends AppController
          * $countMarkerviews = count($markerviews);
         for ($i = 0; $i < $countMarkerviews; $i++) {
             $markerviews[$i]['category'] = $markerviews[$i]['category_id'];
-        }
-        *
+    }
+    *
          */
         // count user total posts
         $userTotalMarkers = $this->Markerviews->find()
@@ -105,8 +105,10 @@ class MarkerviewsController extends AppController
 
         $userTotalToday = $this->Markerviews->find()
             ->where([
-                'Markerviews.user_id' => $this->Auth->user('id'),
-                'DATE(created)' => 'CURDATE()'
+                'AND' => [
+                    ['Markerviews.user_id' => $this->Auth->user('id')],
+                    ['DATE(Markerviews.created)' => date('Y-m-d')]
+                ]
             ])
             ->count();
 
