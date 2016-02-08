@@ -29,20 +29,6 @@ class ActivitiesController extends AppController
      */
     public function index()
     {
-        $this->set('activities', $this->paginate($this->Activities));
-        $this->set('_serialize', ['activities']);
-    }
-
-    /**
-     * View method
-     *
-     * @param string|null $id Activity id.
-     * @return void
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
-     */
-    public function view($id = null)
-    {
-        //$user = $this->Users->get($this->Auth->user('id'));
         $id = $this->Auth->user('id');
 
         $userTotal = $this->Users->Markers->find()
@@ -54,12 +40,21 @@ class ActivitiesController extends AppController
             ])
             ->count();
 
+        $userTotalWeek = $this->Users->Markers->find()
+            ->where([
+                'AND' => [
+                    ['Markers.user_id' => $id],
+                    ['Markers.active' => 1],
+                    ['DATE(Markers.created) >' => date('Y-m-d', strtotime('-7 days'))]
+                ]
+            ])
+            ->count();
+
 
         // user count 7 days
         $weekly = [];
-        $j = 1;
         for($i = 0; $i < 7; $i++) {
-            $days = '-' . $i . ' days';
+            $days = '-' . (6-$i) . ' days';
             $date = date('Y-m-d', strtotime($days));
             $userRowsCount = $this->Users->Markers->find()
                 ->where([
@@ -71,15 +66,79 @@ class ActivitiesController extends AppController
                 ])
                 ->count();
             $weekly[] = [
-                'id' => $j,
+                'id' => $i+1,
                 'name' => $date,
                 'value' => $userRowsCount
             ];
-            $j++;
         }
 
         $meta = [
-            'total' => $userTotal
+            'total' => $userTotal,
+            'totalWeek' => $userTotalWeek
+        ];
+
+        $this->set([
+            'activities' => $weekly,
+            'meta' => $meta,
+            '_serialize' => ['activities', 'meta']
+        ]);
+    }
+
+    /**
+     * View method
+     *
+     * @param string|null $id Activity id.
+     * @return void
+     * @throws \Cake\Network\Exception\NotFoundException When record not found.
+     */
+    public function view($id = null)
+    {
+        $id = $this->Auth->user('id');
+
+        $userTotal = $this->Users->Markers->find()
+            ->where([
+                'AND' => [
+                    ['Markers.user_id' => $id],
+                    ['Markers.active' => 1]
+                ]
+            ])
+            ->count();
+
+        $userTotalWeek = $this->Users->Markers->find()
+            ->where([
+                'AND' => [
+                    ['Markers.user_id' => $id],
+                    ['Markers.active' => 1],
+                    ['DATE(Markers.created) >' => date('Y-m-d', strtotime('-7 days'))]
+                ]
+            ])
+            ->count();
+
+
+        // user count 7 days
+        $weekly = [];
+        for($i = 0; $i < 7; $i++) {
+            $days = '-' . (6-$i) . ' days';
+            $date = date('Y-m-d', strtotime($days));
+            $userRowsCount = $this->Users->Markers->find()
+                ->where([
+                    'AND' => [
+                        ['Markers.user_id' => $id],
+                        ['Date(Markers.created)' => $date],
+                        ['Markers.active' => 1]
+                    ]
+                ])
+                ->count();
+            $weekly[] = [
+                'id' => $i+1,
+                'name' => $date,
+                'value' => $userRowsCount
+            ];
+        }
+
+        $meta = [
+            'total' => $userTotal,
+            'totalWeek' => $userTotalWeek
         ];
 
         $this->set([
