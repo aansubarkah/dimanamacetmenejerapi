@@ -46,6 +46,7 @@ Router::extensions(['json']);
 Router::scope('/', function ($routes) {
     $routes->extensions(['json']);
     $routes->resources('Accesses');
+    $routes->resources('Activities');
     $routes->resources('Categories');
     $routes->resources('Groups');
     $routes->resources('Markers');
