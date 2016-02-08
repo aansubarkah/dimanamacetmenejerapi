@@ -5,6 +5,8 @@ use App\Controller\AppController;
 use Cake\Event\Event;
 use Cake\Network\Exception\UnauthorizedException;
 use Cake\Utility\Security;
+use Cake\Auth\DefaultPasswordHasher;
+use Cake\Network\Response;
 
 /**
  * Users Controller
@@ -256,21 +258,83 @@ class UsersController extends AppController
      */
     public function edit($id = null)
     {
-        $user = $this->Users->get($id);
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            if (isset($this->request->data['user']['active'])) unset($this->request->data['user']['active']);
+        $user = $this->Users->get($this->Auth->user('id'));
+        $errorMessages = 'Error in';
+        $isError = 0;
 
-            $user = $this->Users->patchEntity($user, $this->request->data['user']);
-            if ($this->Users->save($user)) {
-                $message = 'Saved';
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            if (isset($this->request->data['user']['password1'])) {
+                $errorMessages = $this->updatePassword($this->request->data);
+                if ($errorMessages !== 1) {
+                    $isError = 1;
+                    $errorMessages = $errorMessages;
+                }
             } else {
-                $message = 'Error';
+                if (isset($this->request->data['user']['password'])) unset($this->request->data['user']['password']);
+                if (isset($this->request->data['user']['password1'])) unset($this->request->data['user']['password1']);
+                if (isset($this->request->data['user']['password2'])) unset($this->request->data['user']['password2']);
+                if (isset($this->request->data['user']['active'])) unset($this->request->data['user']['active']);
+
+                $user = $this->Users->patchEntity($user, $this->request->data['user']);
+                if ($this->Users->save($user)) {
+                    $message = 'Saved';
+                } else {
+                    $isError = 1;
+                    $message = 'Error';
+                }
             }
         }
-        $this->set([
-            'user' => $user,
-            '_serialize' => ['user']
-        ]);
+
+        $meta = [
+            'isError' => $isError,
+            'errorMessages' => $errorMessages
+        ];
+
+        if ($isError) {
+            $errors = [
+                'detail' => $errorMessages,
+                'source' => [
+                    'pointer' => 'user/password'
+                ]
+            ];
+            $this->set([
+                'errors' => [$errors],
+                '_serialize' => ['errors']
+            ]);
+            // Hacked cakephp source on
+            // vendor/cakephp/src/Network/Response.php
+            $this->response->statusCode(422);
+        } else {
+            $this->set([
+                'user' => $user,
+                '_serialize' => ['user']
+            ]);
+        }
+    }
+
+    public function updatePassword($data) {
+        // see http://base-syst.com/password-validation-when-changing-password-in-cakephp-3/
+        $user =$this->Users->get($this->Auth->user('id'));
+        if (!empty($data['user']['password']) && !empty($data['user']['password1']) && !empty($data['user']['password2'])) {
+            $user = $this->Users->patchEntity($user, [
+                'old_password'  => $data['user']['password'],
+                'password'      => $data['user']['password1'],
+                'password1'     => $data['user']['password1'],
+                'password2'     => $data['user']['password2']
+            ],
+            ['validate' => 'password']
+        );
+
+            if ($this->Users->save($user)) {
+                //$message = $user;
+                $message = 1;
+            } else {
+                $message = $user->errors();
+            }
+        } else {
+            $message = 'Empty password';
+        }
+        return $message;
     }
 
     /**
@@ -295,5 +359,32 @@ class UsersController extends AppController
             'user' => $user,
             '_serialize' => ['user']
         ]);
+    }
+
+    public function checkPassword() {
+        $password = $this->request->data;
+        if(trim($password['password']) !== null) {
+            $user = $this->Users->find()
+                ->select(['Users.password'])
+                ->where([
+                    'Users.id' => $this->Auth->user('id'),
+                ])
+                ->first();
+
+            $check = 0;
+            if((new DefaultPasswordhasher)->check($password['password'], $user['password'])) {
+                $check = 1;
+            }
+
+            $this->set([
+                'user' => $check,
+                '_serialize' => ['user']
+            ]);
+        } else {
+            $this->set([
+                'user'=> 'error',
+                '_serialize' => ['user']
+            ]);
+        }
     }
 }

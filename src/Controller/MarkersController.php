@@ -174,24 +174,26 @@ class MarkersController extends AppController
 
         if($id !== null) {
             $marker = $this->Markers->find()
-                ->contain(['Respondents'])
-                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Respondents.name'])
+                ->contain(['Respondents', 'Categories'])
+                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Respondents.name', 'Categories.name'])
                 ->where(['Markers.id' => $id])
                 ->first();
 
-            $this->postTweet($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name']);
+            $this->postTweet($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name']);
         }
     }
 
-    private function postTweet($info = null, $lat = null, $lng = null, $respondent = null) {
+    private function postTweet($info = null, $lat = null, $lng = null, $respondent = null, $category = null) {
         $Twitter = new TwitterAPIExchange($this->settingsTwitter);
 
         $url = $this->baseTwitterUrl . 'statuses/update.json';
 
         $lat === null ? $lat = -7.256177 : $lat = $lat;
         $lng === null ? $long = 112.752268 : $long = $lng;
+        $category = null ? $category = '#macet' : $category = '#' . strtolower($category);
         $status = 'dimanamacet.com: ' . $info;
         $status = $status . ' via: ' . $respondent;
+        $status = $status . ' ' . $category . ' #dimanamacetid #dimanamacet';
 
         $postfield = '?status=' . $status;
         $postfield = $postfield . '&lat=' . $lat;
