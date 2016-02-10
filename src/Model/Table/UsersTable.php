@@ -14,6 +14,7 @@ use Cake\Auth\DefaultPasswordHasher;
  * @property \Cake\ORM\Association\BelongsTo $Groups
  * @property \Cake\ORM\Association\HasMany $Markers
  * @property \Cake\ORM\Association\HasMany $Markerviews
+ * @property \Cake\ORM\Association\BelongsTo $Regions
  */
 class UsersTable extends Table
 {
@@ -34,6 +35,10 @@ class UsersTable extends Table
 
         $this->belongsTo('Groups', [
             'foreignKey' => 'group_id',
+            'joinType' => 'INNER'
+        ]);
+        $this->belongsTo('Regions', [
+            'foreignKey' => 'region_id',
             'joinType' => 'INNER'
         ]);
         $this->hasMany('Markers', [
@@ -87,6 +92,7 @@ class UsersTable extends Table
         $rules->add($rules->isUnique(['username']));
         $rules->add($rules->isUnique(['email']));
         $rules->add($rules->existsIn(['group_id'], 'Groups'));
+        //$rules->add($rules->existsIn(['region_id'], 'Regions'));
         return $rules;
     }
 
