@@ -68,6 +68,9 @@ class SourcesTable extends Table
             ->notEmpty('regionLng');
 
         $validator
+            ->allowEmpty('placeName', 'create');
+
+        $validator
             ->add('lat', 'valid', ['rule' => 'numeric'])
             ->requirePresence('lat', 'create')
             ->notEmpty('lat');
@@ -99,12 +102,10 @@ class SourcesTable extends Table
             ->notEmpty('info');
 
         $validator
-            ->requirePresence('url', 'create')
-            ->notEmpty('url');
+            ->allowEmpty('media', 'create');
 
         $validator
-            ->requirePresence('media', 'create')
-            ->notEmpty('media');
+            ->allowEmpty('url', 'create');
 
         $validator
             ->add('isImported', 'valid', ['rule' => 'boolean'])
