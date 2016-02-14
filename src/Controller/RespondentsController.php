@@ -61,7 +61,7 @@ class RespondentsController extends AppController
                 }
             }
 
-            $conditions = ['Respondents.active' => true];
+            $conditions = ['Respondents.isOfficial' => true, 'Respondents.active' => true];
 
             if (!empty(trim($query))) {
                 $conditions['LOWER(Respondents.name) LIKE'] = '%' . strtolower($query) . '%';
