@@ -20,8 +20,8 @@ class SourcesController extends AppController
     public function index()
     {
         $respondent_id = null;
-        if (!empty($this->request->query['respondent'])) {
-            $respondent_id = $this->request->query['respondent'];
+        if (!empty($this->request->query['respondentID'])) {
+            $respondent_id = $this->request->query['respondentID'];
         }
 
         $region_id = 1;
@@ -29,6 +29,7 @@ class SourcesController extends AppController
         $sources = [];
         $total = 0;
 
+        // limiting query
         $limit = $this->limit;
         if (isset($this->request->query['limit'])) {
             if (is_numeric($this->request->query['limit'])) {
@@ -45,6 +46,14 @@ class SourcesController extends AppController
             }
         }
 
+        if (isset($this->request->query['query'])) {
+            $query = trim($this->request->query['query']);
+            if (!empty($query)) {
+                //$page = 1;
+                //$offset = 0;
+                $conditions[] = ['LOWER(info) LIKE' => '%' . strtolower($query) . '%'];
+            }
+        }
         // get user region
         $user = $this->Sources->Regions->Users->get($this->Auth->user('id'));
 
@@ -100,9 +109,7 @@ class SourcesController extends AppController
      */
     public function view($id = null)
     {
-        $source = $this->Sources->get($id, [
-            'contain' => ['Respondents', 'Regions']
-        ]);
+        $source = $this->Sources->get($id);
         $this->set('source', $source);
         $this->set('_serialize', ['source']);
     }
@@ -155,24 +162,30 @@ class SourcesController extends AppController
         $regions = $this->Sources->Regions->find('list', ['limit' => 200]);
         $this->set(compact('source', 'respondents', 'regions'));
         $this->set('_serialize', ['source']);
-        }
+    }
 
-        /**
-         * Delete method
-         *
-         * @param string|null $id Source id.
-         * @return void Redirects to index.
-         * @throws \Cake\Network\Exception\NotFoundException When record not found.
-         */
-        public function delete($id = null)
-        {
-            $this->request->allowMethod(['post', 'delete']);
-            $source = $this->Sources->get($id);
-            if ($this->Sources->delete($source)) {
-                $this->Flash->success(__('The source has been deleted.'));
-        } else {
-            $this->Flash->error(__('The source could not be deleted. Please, try again.'));
+    /**
+     * Delete method
+     *
+     * @param string|null $id Source id.
+     * @return void Redirects to index.
+     * @throws \Cake\Network\Exception\NotFoundException When record not found.
+     */
+    public function delete($id = null)
+    {
+        $source = $this->Sources->get($id);
+        if ($this->request->is(['delete'])) {
+            $source->active = false;
+            if ($this->Sources->save($source)) {
+                //$message = 'Deleted';
+                $message = $source;
+            } else {
+                $message = 'Error';
+            }
         }
-        return $this->redirect(['action' => 'index']);
-        }
-        }
+        $this->set([
+            'source' => $message,
+            '_serialize' => ['source']
+        ]);
+    }
+}

@@ -53,6 +53,7 @@ Router::scope('/', function ($routes) {
     $routes->resources('Markerviews');
     $routes->resources('Places');
     $routes->resources('Respondents');
+    $routes->resources('Sources');
     $routes->resources('Users');
     $routes->resources('Weather');
     $routes->fallbacks('InflectedRoute');
