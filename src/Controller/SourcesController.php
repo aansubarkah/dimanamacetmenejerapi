@@ -47,14 +47,20 @@ class SourcesController extends AppController
 
         // get user region
         $user = $this->Sources->Regions->Users->get($this->Auth->user('id'));
-        if ($user['region_id'] !== 1) {
-            $conditions['OR'] = [
-                ['region_id' => 1],
-                ['region_id' => $user['region_id']]
-            ];
+
+        if(!empty($respondent_id)) {
+            $conditions[]=['respondent_id' => $respondent_id];
         } else {
-            $conditions[] = ['region_id' => 1];
+            if ($user['region_id'] !== 1) {
+                $conditions['OR'] = [
+                    ['region_id' => 1],
+                    ['region_id' => $user['region_id']]
+                ];
+            } else {
+                $conditions[] = ['region_id' => 1];
+            }
         }
+
         $conditions[] = ['active' => 1];
         $conditions[] = ['isImported' => 0];
 
@@ -63,12 +69,9 @@ class SourcesController extends AppController
             ->order(['twitTime' => 'DESC'])
             ->limit($limit)->page($page)->offset($offset)
             ->toArray();
+        $totalSources = $this->Sources->find()->where($conditions);
+        $total = $totalSources->count();
 
-        /*if(!empty($respondent_id)) {
-            $whichRespondent
-        } else {
-            $sources = $this->timeline(
-        }*/
         $meta = [
             'total' => $total
         ];
@@ -80,10 +83,10 @@ class SourcesController extends AppController
     }
 
     /**
-    * User Timeline method
-    *
-    * @return void
-    */
+     * User Timeline method
+     *
+     * @return void
+     */
     public function timeline() {
 
     }
@@ -152,24 +155,24 @@ class SourcesController extends AppController
         $regions = $this->Sources->Regions->find('list', ['limit' => 200]);
         $this->set(compact('source', 'respondents', 'regions'));
         $this->set('_serialize', ['source']);
-    }
+        }
 
-    /**
-     * Delete method
-     *
-     * @param string|null $id Source id.
-     * @return void Redirects to index.
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
-     */
-    public function delete($id = null)
-    {
-        $this->request->allowMethod(['post', 'delete']);
-        $source = $this->Sources->get($id);
-        if ($this->Sources->delete($source)) {
-            $this->Flash->success(__('The source has been deleted.'));
+        /**
+         * Delete method
+         *
+         * @param string|null $id Source id.
+         * @return void Redirects to index.
+         * @throws \Cake\Network\Exception\NotFoundException When record not found.
+         */
+        public function delete($id = null)
+        {
+            $this->request->allowMethod(['post', 'delete']);
+            $source = $this->Sources->get($id);
+            if ($this->Sources->delete($source)) {
+                $this->Flash->success(__('The source has been deleted.'));
         } else {
             $this->Flash->error(__('The source could not be deleted. Please, try again.'));
         }
         return $this->redirect(['action' => 'index']);
-    }
-}
+        }
+        }
