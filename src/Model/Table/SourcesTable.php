@@ -12,6 +12,8 @@ use Cake\Validation\Validator;
  *
  * @property \Cake\ORM\Association\BelongsTo $Respondents
  * @property \Cake\ORM\Association\BelongsTo $Regions
+ * @property \Cake\ORM\Association\BelongsTo $Categories
+ * @property \Cake\ORM\Association\BelongsTo $Weathers
  */
 class SourcesTable extends Table
 {
@@ -40,6 +42,15 @@ class SourcesTable extends Table
             'joinType' => 'INNER'
         ]);
 
+        $this->belongsTo('Weathers', [
+            'foreignKey' => 'weather_id',
+            'joinType' => 'INNER'
+        ]);
+
+        $this->belongsTo('Categories', [
+            'foreignKey' => 'category_id',
+            'joinType' => 'INNER'
+        ]);
     }
 
     /**
@@ -69,6 +80,12 @@ class SourcesTable extends Table
 
         $validator
             ->allowEmpty('placeName', 'create');
+
+        $validator
+            ->allowEmpty('categoryName', 'create');
+
+        $validator
+            ->allowEmpty('weatherName', 'create');
 
         $validator
             ->add('lat', 'valid', ['rule' => 'numeric'])
