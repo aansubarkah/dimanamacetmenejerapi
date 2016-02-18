@@ -4,6 +4,7 @@ use Cake\I18n\I18n;//cakephp need this to save datetime field
 use Cake\I18n\Time;//cakephp need this to save datetime field
 use Cake\Database\Type;//cakephp need this to save datetime field
 use TwitterAPIExchange;
+use Cake\ORM\TableRegistry;
 
 use App\Controller\AppController;
 
@@ -15,6 +16,8 @@ use App\Controller\AppController;
 class MarkersController extends AppController
 {
     public $limit = 25;
+
+    public $Places = null;
 
     public $paginate = [
         'fields' => ['Markers.id', 'Markers.name', 'Markers.active'],
@@ -123,11 +126,11 @@ class MarkersController extends AppController
     }
 
     /**
-     * Add method
+     * Add From Sources Table method
      *
      * @return void Redirects on successful add, renders view otherwise.
      */
-    public function add()
+    private function addFromSources()
     {
         if ($this->request->is('post')) {
             if (isset($this->request->data['marker']['active'])) unset($this->request->data['marker']['active']);
@@ -138,33 +141,110 @@ class MarkersController extends AppController
             unset($this->request->data['marker']['created']);
             unset($this->request->data['marker']['modified']);
 
-            $now = date('Y-m-d H:i:s');
-            $this->request->data['marker']['twitTime'] = new Time($now);
+            //$now = date('Y-m-d H:i:s');
+            $this->request->data['marker']['twitTime'] = new Time($this->request->data['marker']['twitTime']) ;
 
-            // if respondent not saved yet, create it first
-            if ($this->request->data['marker']['respondent_id'] === 0) {
-                $respondentToSave = [
-                    'name' => $this->request->data['marker']['respondentName'],
-                    'contact' => $this->request->data['marker']['respondentContact'],
-                    'active' => 1
-                ];
-                $respondent = $this->Markers->Respondents->newEntity($respondentToSave);
-                $this->Markers->Respondents->save($respondent);
-
-                $this->request->data['marker']['respondent_id'] = $respondent->id;
-            }
-
-            //$this->request->data['marker']['user_id'] = 1;
+            $this->request->data['marker']['user_id'] = $this->Auth->user('id');
             $marker = $this->Markers->newEntity($this->request->data['marker']);
             $this->Markers->save($marker);
 
+            // add places
+            $this->savePlace($this->request->data['marker']['twitPlaceName'], $this->request->data['marker']['lat'], $this->request->data['marker']['lng']);
+
+            // update sources table
+            $this->updateSource($this->request->data['marker']['twitID']);
+
             // post tweet
-            $this->convertPostToTweet($marker->id);
+            //$this->convertPostToTweet($marker->id);
 
             $this->set([
                 'marker' => $marker,
                 '_serialize' => ['marker']
             ]);
+        }
+    }
+
+    private function savePlace($placeName = null, $lat = null, $lng = null)
+    {
+        if ($lat !== null && $lng !== null) {
+            $this->Places = TableRegistry::get('Places');
+
+            // first check if place exist on table
+            $placeCount = $this->Places->find()
+                ->where(['lat' => $lat, 'lng' => $lng])
+                ->count();
+
+            if ($placeCount === 0) {
+                $dataToSave = [
+                    'name' => $placeName,
+                    'lat' => $lat,
+                    'lng' => $lng,
+                    'active' => 1
+                ];
+
+                $place = $this->Places->newEntity($dataToSave);
+                $this->Places->save($place);
+            }
+        }
+    }
+
+    private function updateSource($twitID = null) {
+        if ($twitID !== null) {
+            $query = $this->Markers->Categories->Sources->query();
+            $query->update()
+                ->set(['isImported' => true])
+                ->where(['twitID' => $twitID])
+                ->execute();
+        }
+    }
+
+    /**
+     * Add method
+     *
+     * @return void Redirects on successful add, renders view otherwise.
+     */
+    public function add()
+    {
+        if ($this->request->is('post')) {
+            if ($this->request->data['marker']['twitPlaceName'] === null) {
+                if (isset($this->request->data['marker']['active'])) unset($this->request->data['marker']['active']);
+                $this->request->data['marker']['active'] = true;
+                if (isset($this->request->data['marker']['cleared'])) unset($this->request->data['marker']['cleared']);
+                $this->request->data['marker']['cleared'] = false;
+                unset($this->request->data['marker']['id']);
+                unset($this->request->data['marker']['created']);
+                unset($this->request->data['marker']['modified']);
+
+                $now = date('Y-m-d H:i:s');
+                $this->request->data['marker']['twitTime'] = new Time($now);
+
+                // if respondent not saved yet, create it first
+                if ($this->request->data['marker']['respondent_id'] === 0) {
+                    $respondentToSave = [
+                        'name' => $this->request->data['marker']['respondentName'],
+                        'contact' => $this->request->data['marker']['respondentContact'],
+                        'active' => 1
+                    ];
+                    $respondent = $this->Markers->Respondents->newEntity($respondentToSave);
+                    $this->Markers->Respondents->save($respondent);
+
+                    $this->request->data['marker']['respondent_id'] = $respondent->id;
+                }
+
+                //$this->request->data['marker']['user_id'] = 1;
+                $marker = $this->Markers->newEntity($this->request->data['marker']);
+                $this->Markers->save($marker);
+
+                // post tweet
+                //$this->convertPostToTweet($marker->id);
+
+                $this->set([
+                    'marker' => $marker,
+                    '_serialize' => ['marker']
+                ]);
+            } else {
+                $this->addFromSources();
+            }
         }
     }
 
