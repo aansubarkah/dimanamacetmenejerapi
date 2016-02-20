@@ -236,7 +236,7 @@ class MarkersController extends AppController
                 $this->Markers->save($marker);
 
                 // post tweet
-                //$this->convertPostToTweet($marker->id);
+                $this->convertPostToTweet($marker->id);
 
                 $this->set([
                     'marker' => $marker,
@@ -247,7 +247,7 @@ class MarkersController extends AppController
             }
         }
     }
-
+//public function convertPostToTweet($id = null) {
     private function convertPostToTweet($id = null) {
         //public function convertPostToTweet($id = null) {
         //$this->autoRender = false;
@@ -255,15 +255,15 @@ class MarkersController extends AppController
         if($id !== null) {
             $marker = $this->Markers->find()
                 ->contain(['Respondents', 'Categories'])
-                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Respondents.name', 'Categories.name'])
+                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Markers.twitTime', 'Respondents.name', 'Categories.name'])
                 ->where(['Markers.id' => $id])
                 ->first();
 
-            $this->postTweet($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name']);
+            $this->postTweet($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime']);
         }
     }
 
-    private function postTweet($info = null, $lat = null, $lng = null, $respondent = null, $category = null) {
+    private function postTweet($info = null, $lat = null, $lng = null, $respondent = null, $category = null, $time = null) {
         $Twitter = new TwitterAPIExchange($this->settingsTwitter);
 
         $url = $this->baseTwitterUrl . 'statuses/update.json';
@@ -271,9 +271,9 @@ class MarkersController extends AppController
         $lat === null ? $lat = -7.256177 : $lat = $lat;
         $lng === null ? $long = 112.752268 : $long = $lng;
         $category = null ? $category = '#macet' : $category = '#' . strtolower($category);
-        $status = 'dimanamacet.com: ' . $info;
+        $status = 'dimanamacet.com: (' . date('H:i', strtotime($time)) . ') ' . $info;
         $status = $status . ' via: ' . $respondent;
-        $status = $status . ' ' . $category . ' #dimanamacetid #dimanamacet';
+        $status = $status . ' ' . $category . ' #dimanamacetid';
 
         $postfield = '?status=' . $status;
         $postfield = $postfield . '&lat=' . $lat;
@@ -286,9 +286,14 @@ class MarkersController extends AppController
 
         $requestMethod = 'POST';
 
-        $exec = $Twitter->setPostfields($postFields)
+        $this->set([
+                    'marker' => $status,
+                    '_serialize' => ['marker']
+                ]);
+
+        /*$exec = $Twitter->setPostfields($postFields)
             ->buildOauth($url, $requestMethod)
-            ->performRequest();
+            ->performRequest();*/
         //echo $exec;
     }
 
