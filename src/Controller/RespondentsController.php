@@ -61,7 +61,12 @@ class RespondentsController extends AppController
                 }
             }
 
-            $conditions = ['Respondents.isOfficial' => true, 'Respondents.active' => true];
+            $conditions['Respondents.isOfficial'] = true;
+            if (!isset($this->request->query['displayAllOfficial'])) {
+                $conditions['Respondents.active'] = true;
+            } else {
+                $limit = 1000;
+            }
 
             if (!empty(trim($query))) {
                 $conditions['LOWER(Respondents.name) LIKE'] = '%' . strtolower($query) . '%';

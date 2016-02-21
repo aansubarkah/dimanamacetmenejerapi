@@ -207,15 +207,8 @@ class MarkersController extends AppController
         if($id !== null) {
             $marker = $this->Markers->find()
                 ->contain(['Respondents', 'Categories'])
-                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Markers.twitTime', 'Markers.category_id', 'Respondents.name', 'Categories.name'])
+                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Markers.twitTime', 'Markers.category_id', 'Markers.twitPlaceName', 'Respondents.name', 'Categories.name'])
                 ->where(['Markers.id' => $id])
-                ->first();
-
-            // find place name
-            $this->Places = TableRegistry::get('Places');
-            $place = $this->Places->find()
-                ->select(['name'])
-                ->where(['lat' => $lat, 'lng' => $lng])
                 ->first();
 
             // find respondent
@@ -232,7 +225,7 @@ class MarkersController extends AppController
                 $marker['respondent']['name'] = 'TMC';
             }
 
-            $this->postTweetFromSource($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id'], $place['name']);
+            $this->postTweetFromSource($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id'], $marker['twitPlaceName']);
         }
     }
 
@@ -243,13 +236,13 @@ class MarkersController extends AppController
 
         $lat === null ? $lat = -7.256177 : $lat = $lat;
         $lng === null ? $long = 112.752268 : $long = $lng;
-        $category = null ? $category = '#macet' : $category = '#' . strtolower($category);
+        $category = null ? $category = '#MACET' : $category = '#' . strtoupper($category);
         $status = 'dimanamacet.com (' . date('H:i', strtotime($time)) . ') ';
 
         if ($category_id !== 3) {
             $status = $status . $category . ' ';
             $status = $status . $placeName . ' ';
-            $status = $status . $Info;
+            $status = $status . $info;
         } else {
             $status = $status . $placeName . ' ';
             $status = $status . $info . ' ';
@@ -338,25 +331,34 @@ class MarkersController extends AppController
         if($id !== null) {
             $marker = $this->Markers->find()
                 ->contain(['Respondents', 'Categories'])
-                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Markers.twitTime', 'Respondents.name', 'Categories.name'])
+                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Markers.twitTime', 'Markers.category_id', 'Respondents.name', 'Categories.name'])
                 ->where(['Markers.id' => $id])
                 ->first();
 
-            $this->postTweet($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime']);
+            $this->postTweet($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id']);
         }
     }
 
-    private function postTweet($info = null, $lat = null, $lng = null, $respondent = null, $category = null, $time = null) {
+    private function postTweet($info = null, $lat = null, $lng = null, $respondent = null, $category = null, $time = null, $category_id = 1) {
         $Twitter = new TwitterAPIExchange($this->settingsTwitter);
 
         $url = $this->baseTwitterUrl . 'statuses/update.json';
 
         $lat === null ? $lat = -7.256177 : $lat = $lat;
         $lng === null ? $long = 112.752268 : $long = $lng;
-        $category = null ? $category = '#macet' : $category = '#' . strtolower($category);
-        $status = 'dimanamacet.com (' . date('H:i', strtotime($time)) . ') ' . $info;
+        $category = null ? $category = '#MACET' : $category = '#' . strtoupper($category);
+        $status = 'dimanamacet.com (' . date('H:i', strtotime($time)) . ') ';
+
+        if ($category_id !== 3) {
+            $status = $status . $category . ' ';
+            $status = $status . $info;
+        } else {
+            $status = $status . $info . ' ';
+            $status = $status . $category;
+        }
+
         $status = $status . ' via: ' . $respondent;
-        $status = $status . ' ' . $category . ' #dimanamacetid';
+        $status = $status . ' #dimanamacetid';
 
         $postfield = '?status=' . $status;
         $postfield = $postfield . '&lat=' . $lat;
