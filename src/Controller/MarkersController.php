@@ -141,7 +141,6 @@ class MarkersController extends AppController
             unset($this->request->data['marker']['created']);
             unset($this->request->data['marker']['modified']);
 
-            //$now = date('Y-m-d H:i:s');
             $this->request->data['marker']['twitTime'] = new Time($this->request->data['marker']['twitTime']) ;
 
             $this->request->data['marker']['user_id'] = $this->Auth->user('id');
@@ -155,7 +154,7 @@ class MarkersController extends AppController
             $this->updateSource($this->request->data['marker']['twitID'], $this->request->data['marker']['twitPlaceName'], $this->request->data['marker']['lat'], $this->request->data['marker']['lng']);
 
             // post tweet
-            $this->convertPostToTweet($marker->id);
+            $this->convertPostToTweetFromSource($marker->id, $this->request->data['marker']['lat'], $this->request->data['marker']['lng'], $this->request->data['marker']['respondent_id']);
 
             $this->set([
                 'marker' => $marker,
@@ -202,6 +201,85 @@ class MarkersController extends AppController
                 ->execute();
         }
     }
+
+    //public function test($id = null, $lat = null, $lng = null, $respondent_id = 25) {
+    private function convertPostToTweetFromSource($id = null, $lat = null, $lng = null, $respondent_id = 25) {
+        if($id !== null) {
+            $marker = $this->Markers->find()
+                ->contain(['Respondents', 'Categories'])
+                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Markers.twitTime', 'Markers.category_id', 'Respondents.name', 'Categories.name'])
+                ->where(['Markers.id' => $id])
+                ->first();
+
+            // find place name
+            $this->Places = TableRegistry::get('Places');
+            $place = $this->Places->find()
+                ->select(['name'])
+                ->where(['lat' => $lat, 'lng' => $lng])
+                ->first();
+
+            // find respondent
+            $respondent = $this->Markers->Respondents->find()
+                ->select(['name'])
+                ->where([
+                    'id' => $respondent_id,
+                    'isOfficial' => 1,
+                    'active' => 1
+                ])
+                ->first();
+
+            if(empty($respondent)) {
+                $marker['respondent']['name'] = 'TMC';
+            }
+
+            $this->postTweetFromSource($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id'], $place['name']);
+        }
+    }
+
+    private function postTweetFromSource($info = null, $lat = null, $lng = null, $respondent = null, $category = null, $time = null, $category_id = 1, $placeName = null) {
+        $Twitter = new TwitterAPIExchange($this->settingsTwitter);
+
+        $url = $this->baseTwitterUrl . 'statuses/update.json';
+
+        $lat === null ? $lat = -7.256177 : $lat = $lat;
+        $lng === null ? $long = 112.752268 : $long = $lng;
+        $category = null ? $category = '#macet' : $category = '#' . strtolower($category);
+        $status = 'dimanamacet.com (' . date('H:i', strtotime($time)) . ') ';
+
+        if ($category_id !== 3) {
+            $status = $status . $category . ' ';
+            $status = $status . $placeName . ' ';
+            $status = $status . $Info;
+        } else {
+            $status = $status . $placeName . ' ';
+            $status = $status . $info . ' ';
+            $status = $status . $category;
+        }
+
+        $status = $status . ' via: ' . $respondent;
+        $status = $status . ' #dimanamacetid';
+
+        $postfield = '?status=' . $status;
+        $postfield = $postfield . '&lat=' . $lat;
+        $postfield = $postfield . '&long=' . $long;
+        $postFields = [
+            'status' => $status,
+            'lat' => $lat,
+            'long' => $long
+        ];
+
+        $requestMethod = 'POST';
+
+        /*$this->set([
+            'marker' => $status,
+            '_serialize' => ['marker']
+    ]);*/
+
+    $exec = $Twitter->setPostfields($postFields)
+        ->buildOauth($url, $requestMethod)
+        ->performRequest();
+    }
+
 
     /**
      * Add method
@@ -291,15 +369,10 @@ class MarkersController extends AppController
 
         $requestMethod = 'POST';
 
-        /*$this->set([
-                    'marker' => $status,
-                    '_serialize' => ['marker']
-    ]);*/
-
-    $exec = $Twitter->setPostfields($postFields)
-        ->buildOauth($url, $requestMethod)
-        ->performRequest();
-    //echo $exec;
+        $exec = $Twitter->setPostfields($postFields)
+            ->buildOauth($url, $requestMethod)
+            ->performRequest();
+        //echo $exec;
     }
 
     /**
