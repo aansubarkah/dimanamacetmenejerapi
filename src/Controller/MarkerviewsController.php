@@ -84,6 +84,7 @@ class MarkerviewsController extends AppController
 
         $markerviews = $this->Markerviews->find()
             ->where($conditions)
+            ->group(['id'])
             ->order(['Markerviews.created' => 'DESC'])
             ->limit($limit)->page($page)->offset($offset)
             ->toArray();
@@ -99,7 +100,21 @@ class MarkerviewsController extends AppController
     *
          */
         // count user total posts
-        $userTotalMarkers = $this->Markerviews->find()
+        // user total post
+        /*$userTotal = $this->Markerviews->Users->Activities->find();
+        $userTotal->where([
+            'user_id' => $this->Auth->user('id'),
+            'active' => 1
+        ]);
+        $userTotal->select(['sum' => $userTotal->func()->sum('value')])->first();
+        $userTotalMarkers = 0;
+        foreach($userTotal as $key) {
+            if(!empty($key['sum'])) {
+                $userTotalMarkers = $key['sum'];
+            }
+        }
+
+        /*$userTotalMarkers = $this->Markerviews->find()
             ->where(['Markerviews.user_id' => $this->Auth->user('id')])
             ->count();
 
@@ -110,12 +125,12 @@ class MarkerviewsController extends AppController
                     ['DATE(Markerviews.created)' => date('Y-m-d')]
                 ]
             ])
-            ->count();
+            ->count();*/
 
         $meta = [
-            'total' => $total,
-            'postByUser' => $userTotalMarkers,
-            'postToday' => $userTotalToday
+            'total' => $total/*,
+            'postByUser' => $userTotalMarkers + $userTotalToday,
+            'postToday' => $userTotalToday*/
         ];
         $this->set([
             'markerviews' => $markerviews,

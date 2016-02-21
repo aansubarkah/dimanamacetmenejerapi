@@ -12,14 +12,14 @@ use Cake\ORM\TableRegistry;
  */
 class ActivitiesController extends AppController
 {
-    public $uses = false;
-    protected $Users = null;
-    protected $markers = null;
+    //public $uses = false;
+    //protected $Users = null;
+    //protected $markers = null;
 
     public function initialize() {
         parent::initialize();
-        $this->loadModel('Users');
-        $this->Users = TableRegistry::get('Users');
+        //$this->loadModel('Users');
+        //$this->Users = TableRegistry::get('Users');
     }
 
     /**
@@ -31,50 +31,78 @@ class ActivitiesController extends AppController
     {
         $id = $this->Auth->user('id');
 
-        $userTotal = $this->Users->Markers->find()
-            ->where([
-                'AND' => [
-                    ['Markers.user_id' => $id],
-                    ['Markers.active' => 1]
-                ]
-            ])
-            ->count();
+        // user total post
+        $userTotal = $this->Activities->find();
+        $userTotal->where([
+            'user_id' => $id,
+            'active' => 1
+        ]);
+        $userTotal->select(['sum' => $userTotal->func()->sum('value')])->first();
+        $total = 0;
+        foreach($userTotal as $key) {
+            if(!empty($key['sum'])) {
+                $total = $key['sum'];
+            }
+        }
 
-        $userTotalWeek = $this->Users->Markers->find()
-            ->where([
-                'AND' => [
-                    ['Markers.user_id' => $id],
-                    ['Markers.active' => 1],
-                    ['DATE(Markers.created) >' => date('Y-m-d', strtotime('-7 days'))]
-                ]
-            ])
-            ->count();
+        // user total post in this week
+        $userTotalWeek = $this->Activities->find();
+        $userTotalWeek->where([
+            'user_id' => $id,
+            'DATE(occured) >' => date('Y-m-d', strtotime('-7 days')),
+            'active' => 1
+        ]);
+        $userTotalWeek->select(['sum' => $userTotalWeek->func()->sum('value')])->first();
+        $totalWeek = 0;
+        foreach($userTotalWeek as $key) {
+            if(!empty($key['sum'])) {
+                $totalWeek = $key['sum'];
+            }
+        }
 
-
-        // user count 7 days
+        // user count 6 days before today
         $weekly = [];
-        for($i = 0; $i < 7; $i++) {
+        for($i = 0; $i < 6; $i++) {
             $days = '-' . (6-$i) . ' days';
             $date = date('Y-m-d', strtotime($days));
-            $userRowsCount = $this->Users->Markers->find()
-                ->where([
-                    'AND' => [
-                        ['Markers.user_id' => $id],
-                        ['Date(Markers.created)' => $date],
-                        ['Markers.active' => 1]
-                    ]
-                ])
-                ->count();
+            $userTotalDay = $this->Activities->find();
+            $userTotalDay->where([
+                'user_id' => $id,
+                'DATE(occured)' => $date,
+                'active' => 1
+            ]);
+            $userTotalDay->select(['value']);
+            $userTotalDay->first();
+
+            foreach($userTotalDay as $key) {
+                $totalDay = $key['value'];
+            }
+
             $weekly[] = [
                 'id' => $i+1,
                 'name' => $date,
-                'value' => $userRowsCount
+                'value' => $totalDay
             ];
         }
 
+        $userTotalToday = $this->Activities->Users->Markers->find()
+            ->where([
+                'user_id' => $id,
+                'active' => 1,
+                'DATE(created)' => date('Y-m-d')
+            ])
+            ->count();
+
+        $weekly[] = [
+            'id' => 7,
+            'name' => date('Y-m-d'),
+            'value' => $userTotalToday
+        ];
+
         $meta = [
-            'total' => $userTotal,
-            'totalWeek' => $userTotalWeek
+            'total' => $total + $userTotalToday,
+            'totalWeek' => $totalWeek + $userTotalToday,
+            'totalToday' => $userTotalToday
         ];
 
         $this->set([

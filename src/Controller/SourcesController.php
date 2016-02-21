@@ -65,9 +65,9 @@ class SourcesController extends AppController
                     ['region_id' => 1],
                     ['region_id' => $user['region_id']]
                 ];
-            } else {
+            } /*else {
                 $conditions[] = ['region_id' => 1];
-            }
+            }*/
         }
 
         $conditions[] = ['active' => 1];

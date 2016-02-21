@@ -152,10 +152,10 @@ class MarkersController extends AppController
             $this->savePlace($this->request->data['marker']['twitPlaceName'], $this->request->data['marker']['lat'], $this->request->data['marker']['lng']);
 
             // update sources table
-            $this->updateSource($this->request->data['marker']['twitID']);
+            $this->updateSource($this->request->data['marker']['twitID'], $this->request->data['marker']['twitPlaceName'], $this->request->data['marker']['lat'], $this->request->data['marker']['lng']);
 
             // post tweet
-            //$this->convertPostToTweet($marker->id);
+            $this->convertPostToTweet($marker->id);
 
             $this->set([
                 'marker' => $marker,
@@ -188,11 +188,16 @@ class MarkersController extends AppController
         }
     }
 
-    private function updateSource($twitID = null) {
+    private function updateSource($twitID = null, $placeName = null, $lat = null, $lng = null) {
         if ($twitID !== null) {
             $query = $this->Markers->Categories->Sources->query();
             $query->update()
-                ->set(['isImported' => true])
+                ->set([
+                    'isImported' => true,
+                    'placeName' => $placeName,
+                    'lat' => $lat,
+                    'lng' => $lng
+                ])
                 ->where(['twitID' => $twitID])
                 ->execute();
         }
@@ -247,7 +252,7 @@ class MarkersController extends AppController
             }
         }
     }
-//public function convertPostToTweet($id = null) {
+    //public function convertPostToTweet($id = null) {
     private function convertPostToTweet($id = null) {
         //public function convertPostToTweet($id = null) {
         //$this->autoRender = false;
@@ -271,7 +276,7 @@ class MarkersController extends AppController
         $lat === null ? $lat = -7.256177 : $lat = $lat;
         $lng === null ? $long = 112.752268 : $long = $lng;
         $category = null ? $category = '#macet' : $category = '#' . strtolower($category);
-        $status = 'dimanamacet.com: (' . date('H:i', strtotime($time)) . ') ' . $info;
+        $status = 'dimanamacet.com (' . date('H:i', strtotime($time)) . ') ' . $info;
         $status = $status . ' via: ' . $respondent;
         $status = $status . ' ' . $category . ' #dimanamacetid';
 
@@ -286,15 +291,15 @@ class MarkersController extends AppController
 
         $requestMethod = 'POST';
 
-        $this->set([
+        /*$this->set([
                     'marker' => $status,
                     '_serialize' => ['marker']
-                ]);
+    ]);*/
 
-        /*$exec = $Twitter->setPostfields($postFields)
-            ->buildOauth($url, $requestMethod)
-            ->performRequest();*/
-        //echo $exec;
+    $exec = $Twitter->setPostfields($postFields)
+        ->buildOauth($url, $requestMethod)
+        ->performRequest();
+    //echo $exec;
     }
 
     /**
