@@ -151,10 +151,10 @@ class MarkersController extends AppController
             $this->savePlace($this->request->data['marker']['twitPlaceName'], $this->request->data['marker']['lat'], $this->request->data['marker']['lng']);
 
             // update sources table
-            $this->updateSource($this->request->data['marker']['twitID'], $this->request->data['marker']['twitPlaceName'], $this->request->data['marker']['lat'], $this->request->data['marker']['lng']);
+            $this->updateSource($this->request->data['marker']['twitID'], $this->request->data['marker']['twitPlaceName'], $this->request->data['marker']['lat'], $this->request->data['marker']['lng'], $this->request->data['marker']['category_id']);
 
             // post tweet
-            $this->convertPostToTweetFromSource($marker->id, $this->request->data['marker']['lat'], $this->request->data['marker']['lng'], $this->request->data['marker']['respondent_id']);
+            //$this->convertPostToTweetFromSource($marker->id, $this->request->data['marker']['lat'], $this->request->data['marker']['lng'], $this->request->data['marker']['respondent_id']);
 
             $this->set([
                 'marker' => $marker,
@@ -187,7 +187,7 @@ class MarkersController extends AppController
         }
     }
 
-    private function updateSource($twitID = null, $placeName = null, $lat = null, $lng = null) {
+    private function updateSource($twitID = null, $placeName = null, $lat = null, $lng = null, $category_id = 1) {
         if ($twitID !== null) {
             $query = $this->Markers->Categories->Sources->query();
             $query->update()
@@ -195,7 +195,8 @@ class MarkersController extends AppController
                     'isImported' => true,
                     'placeName' => $placeName,
                     'lat' => $lat,
-                    'lng' => $lng
+                    'lng' => $lng,
+                    'category_id' => $category_id
                 ])
                 ->where(['twitID' => $twitID])
                 ->execute();
@@ -251,6 +252,7 @@ class MarkersController extends AppController
 
         $status = $status . ' via: ' . $respondent;
         $status = $status . ' #dimanamacetid';
+        $status = preg_replace('!\s+!', ' ', $status);
 
         $postfield = '?status=' . $status;
         $postfield = $postfield . '&lat=' . $lat;
@@ -359,6 +361,7 @@ class MarkersController extends AppController
 
         $status = $status . ' via: ' . $respondent;
         $status = $status . ' #dimanamacetid';
+        $status = preg_replace('!\s+!', ' ', $status);
 
         $postfield = '?status=' . $status;
         $postfield = $postfield . '&lat=' . $lat;

@@ -46,6 +46,16 @@ class SourcesController extends AppController
             }
         }
 
+        $lastMinutes = 60;
+        if (isset($this->request->query['lastminutes'])) {
+            if (is_numeric($this->request->query['lastminutes'])) {
+                $lastMinutes = $this->request->query['lastminutes'];
+            }
+        }
+        $lastMinutesString = '-' . $lastMinutes . ' minutes';
+
+        $conditions[] = ['twitTime >=' => date('Y-m-d H:i:s', strtotime($lastMinutesString))];
+
         if (isset($this->request->query['query'])) {
             $query = trim($this->request->query['query']);
             if (!empty($query)) {
