@@ -32,28 +32,6 @@ class MarkersController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Paginator');
-        //$this->loadComponent('Twitter');
-    }
-
-    /*public function twit()
-    {
-        $data = $this->Twitter->getTweets();
-
-        $this->set([
-            'data' => $data,
-            '_serialize' => ['data']
-        ]);
-    }
-
-    public function twit1()
-    {
-        $data = $this->Twitter->getMention();
-        //$data = $this->Twitter->getSearch('e100ss');
-
-        $this->set([
-            'data' => $data,
-            '_serialize' => ['data']
-        ]);
     }
 
     /**
@@ -151,10 +129,15 @@ class MarkersController extends AppController
             $this->savePlace($this->request->data['marker']['twitPlaceName'], $this->request->data['marker']['lat'], $this->request->data['marker']['lng']);
 
             // update sources table
-            $this->updateSource($this->request->data['marker']['twitID'], $this->request->data['marker']['twitPlaceName'], $this->request->data['marker']['lat'], $this->request->data['marker']['lng'], $this->request->data['marker']['category_id']);
+            $this->updateSource($this->request->data['marker']['twitID'],
+                $this->request->data['marker']['twitPlaceName'],
+                $this->request->data['marker']['lat'],
+                $this->request->data['marker']['lng'],
+                $this->request->data['marker']['category_id'],
+                $this->request->data['marker']['weather_id']);
 
             // post tweet
-            //$this->convertPostToTweetFromSource($marker->id, $this->request->data['marker']['lat'], $this->request->data['marker']['lng'], $this->request->data['marker']['respondent_id']);
+            $this->convertPostToTweetFromSource($marker->id, $this->request->data['marker']['lat'], $this->request->data['marker']['lng'], $this->request->data['marker']['respondent_id']);
 
             $this->set([
                 'marker' => $marker,
@@ -187,8 +170,20 @@ class MarkersController extends AppController
         }
     }
 
-    private function updateSource($twitID = null, $placeName = null, $lat = null, $lng = null, $category_id = 1) {
+    private function updateSource($twitID = null, $placeName = null, $lat = null, $lng = null, $category_id = 1, $weather_id = 1) {
         if ($twitID !== null) {
+            $weather = $this->Markers->Weather->find()
+                ->select(['name'])
+                ->where(['id' => $weather_id])
+                ->first();
+            $weatherName = $weather['name'];
+
+            $category = $this->Markers->Categories->find()
+                ->select(['name'])
+                ->where(['id' => $category_id])
+                ->first();
+            $categoryName = $category['name'];
+
             $query = $this->Markers->Categories->Sources->query();
             $query->update()
                 ->set([
@@ -196,7 +191,10 @@ class MarkersController extends AppController
                     'placeName' => $placeName,
                     'lat' => $lat,
                     'lng' => $lng,
-                    'category_id' => $category_id
+                    'category_id' => $category_id,
+                    'categoryName' => $categoryName,
+                    'weather_id' => $weather_id,
+                    'weatherName' => $weatherName
                 ])
                 ->where(['twitID' => $twitID])
                 ->execute();
@@ -268,11 +266,11 @@ class MarkersController extends AppController
         /*$this->set([
             'marker' => $status,
             '_serialize' => ['marker']
-    ]);*/
+        ]);*/
 
-    $exec = $Twitter->setPostfields($postFields)
-        ->buildOauth($url, $requestMethod)
-        ->performRequest();
+        $exec = $Twitter->setPostfields($postFields)
+            ->buildOauth($url, $requestMethod)
+            ->performRequest();
     }
 
 

@@ -183,6 +183,7 @@ class SourcesController extends AppController
     {
         $source = $this->Sources->get($id);
         if ($this->request->is(['delete'])) {
+            $source->isRelevant = false;
             $source->active = false;
             if ($this->Sources->save($source)) {
                 //$message = 'Deleted';
