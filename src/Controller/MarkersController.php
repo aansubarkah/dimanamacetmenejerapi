@@ -229,51 +229,260 @@ class MarkersController extends AppController
     }
 
     private function postTweetFromSource($info = null, $lat = null, $lng = null, $respondent = null, $category = null, $time = null, $category_id = 1, $placeName = null) {
-        $Twitter = new TwitterAPIExchange($this->settingsTwitter);
+        if (!empty(trim($placeName))) {
+            $Twitter = new TwitterAPIExchange($this->settingsTwitter);
 
-        $url = $this->baseTwitterUrl . 'statuses/update.json';
+            $url = $this->baseTwitterUrl . 'statuses/update.json';
 
-        $lat === null ? $lat = -7.256177 : $lat = $lat;
-        $lng === null ? $long = 112.752268 : $long = $lng;
-        $category = null ? $category = '#MACET' : $category = '#' . strtoupper($category);
-        $status = 'dimanamacet.com (' . date('H:i', strtotime($time)) . ') ';
+            $lat === null ? $lat = -7.256177 : $lat = $lat;
+            $lng === null ? $long = 112.752268 : $long = $lng;
+            $city = $this->nearestCity($lat, $lng);
+            $category = null ? $category = '#MACET' : $category = '#' . strtoupper($category);
+            $status = 'dimanamacet.com (' . date('H:i', strtotime($time)) . ') ';
+            $status = $status . ' #' . strtoupper($city[1]) . ' ';
 
-        if ($category_id !== 3) {
-            $status = $status . $category . ' ';
-            $status = $status . $placeName . ' ';
-            $status = $status . $info;
-        } else {
-            $status = $status . $placeName . ' ';
-            $status = $status . $info . ' ';
-            $status = $status . $category;
-        }
+            if ($category_id !== 3) {
+                $status = $status . $category . ' ';
+                $status = $status . $placeName . ' ';
+                $status = $status . $info;
+            } else {
+                $status = $status . $placeName . ' ';
+                $status = $status . $info . ' ';
+                $status = $status . $category;
+            }
 
-        $status = $status . ' via: ' . $respondent;
-        $status = $status . ' #dimanamacetid';
-        $status = preg_replace('!\s+!', ' ', $status);
+            $status = $status . ' via: ' . $respondent;
+            $status = $status . ' #dimanamacetid';
+            $status = preg_replace('!\s+!', ' ', $status);
 
-        $postfield = '?status=' . $status;
-        $postfield = $postfield . '&lat=' . $lat;
-        $postfield = $postfield . '&long=' . $long;
-        $postFields = [
-            'status' => $status,
-            'lat' => $lat,
-            'long' => $long
-        ];
+            $postfield = '?status=' . $status;
+            $postfield = $postfield . '&lat=' . $lat;
+            $postfield = $postfield . '&long=' . $long;
+            $postFields = [
+                'status' => $status,
+                'lat' => $lat,
+                'long' => $long
+            ];
 
-        $requestMethod = 'POST';
+            $requestMethod = 'POST';
 
         /*$this->set([
             'marker' => $status,
             '_serialize' => ['marker']
         ]);*/
 
-        $exec = $Twitter->setPostfields($postFields)
-            ->buildOauth($url, $requestMethod)
-            ->performRequest();
+            $exec = $Twitter->setPostfields($postFields)
+                ->buildOauth($url, $requestMethod)
+                ->performRequest();
+        }
     }
 
+    //public function testR($lat = null, $lng = null) {
+    private function nearestCity($lat = null, $lng = null) {
+        if($lat !== null && $lng !== null) {
+            $items = [
+                [155, 'Kep Seribu', -6.193689, 106.851158],
+                [156, 'Jakarta', -6.186486, 106.834091],
+                [157, 'Jakarta', -6.138414, 106.863953],
+                [158, 'Jakarta', -6.168329, 106.758850],
+                [159, 'Jakarta', -6.261493, 106.810600],
+                [160, 'Jakarta', -6.225014, 106.900444],
+                [161, 'Bogor', -6.551776, 106.629128],
+                [162, 'Suumi', -7.213405, 106.629128],
+                [163, 'Cianjur', -7.357977, 107.195717],
+                [164, 'Bandung', -7.134070, 107.621529],
+                [165, 'Garut', -7.501220, 107.763618],
+                [166, 'Tasikmalaya', -7.651331, 108.142868],
+                [167, 'Ciamis', -7.332077, 108.349251],
+                [168, 'Kuningan', -7.013805, 108.570061],
+                [169, 'Cirebon', -6.689888, 108.475082],
+                [170, 'Majalengka', -6.779060, 108.285202],
+                [171, 'Sumedang', -6.832858, 107.953186],
+                [172, 'Indramayu', -6.337310, 108.325836],
+                [173, 'Subang', -6.348762, 107.763618],
+                [174, 'Purwakarta', -6.564924, 107.432198],
+                [175, 'Karawang', -6.322730, 107.337578],
+                [176, 'Bekasi', -6.247447, 107.148453],
+                [177, 'Bandung Barat', -6.865221, 107.491974],
+                [178, 'Pangandaran', -7.615061, 108.498825],
+                [179, 'Bogor', -6.597147, 106.806038],
+                [180, 'Suumi', -6.927736, 106.929955],
+                [181, 'Bandung', -6.917464, 107.619125],
+                [182, 'Cirebon', -6.732023, 108.552315],
+                [183, 'Bekasi', -6.238270, 106.975571],
+                [184, 'Depok', -6.402484, 106.794243],
+                [185, 'Cimahi', -6.884082, 107.541306],
+                [186, 'Tasikmalaya', -7.350581, 108.217163],
+                [187, 'Banjar', -7.370687, 108.534248],
+                [228, 'Pacitan', -8.126331, 111.141426],
+                [229, 'Ponorogo', -7.865076, 111.469635],
+                [230, 'Trenggalek', -8.182411, 111.618378],
+                [231, 'Tulungagung', -8.084321, 111.904556],
+                [232, 'Blitar', -8.130866, 112.220009],
+                [233, 'Kediri', -7.823240, 112.190712],
+                [234, 'Malang', -8.242209, 112.715210],
+                [235, 'Lumajang', -8.094357, 113.144157],
+                [236, 'Jember', -8.184486, 113.668076],
+                [237, 'Banyuwangi', -8.219094, 114.369141],
+                [238, 'Bondowoso', -7.967391, 113.906059],
+                [239, 'Situbondo', -7.788852, 114.191498],
+                [240, 'Probolinggo', -7.871756, 113.477608],
+                [241, 'Pasuruan', -7.785996, 112.858215],
+                [242, 'Sidoarjo', -7.472613, 112.667542],
+                [243, 'Mojokerto', -7.563831, 112.476830],
+                [244, 'Jombang', -7.574087, 112.286087],
+                [245, 'Nganjuk', -7.594351, 111.904556],
+                [246, 'Madiun', -7.609331, 111.618378],
+                [247, 'Magetan', -7.643314, 111.356049],
+                [248, 'Ngawi', -7.460987, 111.332199],
+                [249, 'Bojonegoro', -7.317463, 111.761467],
+                [250, 'Tuban', -6.984746, 111.952248],
+                [251, 'Lamongan', -7.126926, 112.333778],
+                [252, 'Gresik', -7.155029, 112.572189],
+                [253, 'Bangkalan', -7.038375, 112.913666],
+                [254, 'Sampang', -7.040233, 113.239449],
+                [255, 'Pamekasan', -7.105086, 113.525230],
+                [256, 'Sumenep', -6.925400, 113.906059],
+                [257, 'Kediri', -7.848016, 112.017830],
+                [258, 'Blitar', -8.095463, 112.160904],
+                [259, 'Malang', -7.966620, 112.632629],
+                [260, 'Probolinggo', -7.776423, 113.203712],
+                [261, 'Pasuruan', -7.646919, 112.899925],
+                [262, 'Mojokerto', -7.470475, 112.440132],
+                [263, 'Madiun', -7.631059, 111.530014],
+                [264, 'Surabaya', -7.257472, 112.752090],
+                [265, 'Batu', -7.883065, 112.533447]
+            ];
 
+            $itemsJakarta = [
+                [155, 'Kep Seribu', -6.193689, 106.851158],
+                [156, 'Jakarta', -6.186486, 106.834091],
+                [157, 'Jakarta', -6.138414, 106.863953],
+                [158, 'Jakarta', -6.168329, 106.758850],
+                [159, 'Jakarta', -6.261493, 106.810600],
+                [160, 'Jakarta', -6.225014, 106.900444]
+            ];
+
+            $itemsBandung = [
+                [161, 'Bogor', -6.551776, 106.629128],
+                [162, 'Suumi', -7.213405, 106.629128],
+                [163, 'Cianjur', -7.357977, 107.195717],
+                [164, 'Bandung', -7.134070, 107.621529],
+                [165, 'Garut', -7.501220, 107.763618],
+                [166, 'Tasikmalaya', -7.651331, 108.142868],
+                [167, 'Ciamis', -7.332077, 108.349251],
+                [168, 'Kuningan', -7.013805, 108.570061],
+                [169, 'Cirebon', -6.689888, 108.475082],
+                [170, 'Majalengka', -6.779060, 108.285202],
+                [171, 'Sumedang', -6.832858, 107.953186],
+                [172, 'Indramayu', -6.337310, 108.325836],
+                [173, 'Subang', -6.348762, 107.763618],
+                [174, 'Purwakarta', -6.564924, 107.432198],
+                [175, 'Karawang', -6.322730, 107.337578],
+                [176, 'Bekasi', -6.247447, 107.148453],
+                [177, 'Bandung Barat', -6.865221, 107.491974],
+                [178, 'Pangandaran', -7.615061, 108.498825],
+                [179, 'Bogor', -6.597147, 106.806038],
+                [180, 'Suumi', -6.927736, 106.929955],
+                [181, 'Bandung', -6.917464, 107.619125],
+                [182, 'Cirebon', -6.732023, 108.552315],
+                [183, 'Bekasi', -6.238270, 106.975571],
+                [184, 'Depok', -6.402484, 106.794243],
+                [185, 'Cimahi', -6.884082, 107.541306],
+                [186, 'Tasikmalaya', -7.350581, 108.217163],
+                [187, 'Banjar', -7.370687, 108.534248]
+            ];
+
+            $itemsSurabaya = [
+                [228, 'Pacitan', -8.126331, 111.141426],
+                [229, 'Ponorogo', -7.865076, 111.469635],
+                [230, 'Trenggalek', -8.182411, 111.618378],
+                [231, 'Tulungagung', -8.084321, 111.904556],
+                [232, 'Blitar', -8.130866, 112.220009],
+                [233, 'Kediri', -7.823240, 112.190712],
+                [234, 'Malang', -8.242209, 112.715210],
+                [235, 'Lumajang', -8.094357, 113.144157],
+                [236, 'Jember', -8.184486, 113.668076],
+                [237, 'Banyuwangi', -8.219094, 114.369141],
+                [238, 'Bondowoso', -7.967391, 113.906059],
+                [239, 'Situbondo', -7.788852, 114.191498],
+                [240, 'Probolinggo', -7.871756, 113.477608],
+                [241, 'Pasuruan', -7.785996, 112.858215],
+                [242, 'Sidoarjo', -7.472613, 112.667542],
+                [243, 'Mojokerto', -7.563831, 112.476830],
+                [244, 'Jombang', -7.574087, 112.286087],
+                [245, 'Nganjuk', -7.594351, 111.904556],
+                [246, 'Madiun', -7.609331, 111.618378],
+                [247, 'Magetan', -7.643314, 111.356049],
+                [248, 'Ngawi', -7.460987, 111.332199],
+                [249, 'Bojonegoro', -7.317463, 111.761467],
+                [250, 'Tuban', -6.984746, 111.952248],
+                [251, 'Lamongan', -7.126926, 112.333778],
+                [252, 'Gresik', -7.155029, 112.572189],
+                [253, 'Bangkalan', -7.038375, 112.913666],
+                [254, 'Sampang', -7.040233, 113.239449],
+                [255, 'Pamekasan', -7.105086, 113.525230],
+                [256, 'Sumenep', -6.925400, 113.906059],
+                [257, 'Kediri', -7.848016, 112.017830],
+                [258, 'Blitar', -8.095463, 112.160904],
+                [259, 'Malang', -7.966620, 112.632629],
+                [260, 'Probolinggo', -7.776423, 113.203712],
+                [261, 'Pasuruan', -7.646919, 112.899925],
+                [262, 'Mojokerto', -7.470475, 112.440132],
+                [263, 'Madiun', -7.631059, 111.530014],
+                [264, 'Surabaya', -7.257472, 112.752090],
+                [265, 'Batu', -7.883065, 112.533447]
+            ];
+
+            $ref = [$lat, $lng];
+            $userID = $this->Auth->user('id');
+            $user = $this->Markers->Users->find()
+                ->where(['id' => $userID])
+                ->first();
+
+            $cityArray = $items;
+
+            switch ($user['region_id']) {
+            case 2:
+                $cityArray = $itemsJakarta;
+                break;
+            case 3:
+                $cityArray = $itemsBandung;
+                break;
+            case 6:
+                $cityArray = $itemsSurabaya;
+                break;
+            default:
+                $cityArray = $items;
+            }
+
+            $distances = array_map(function($item) use($ref) {
+                $a = array_slice($item, -2);
+                return $this->distance($a, $ref);
+            }, $cityArray);
+
+            asort($distances);
+
+        /*$this->set([
+           'markers' => $cityArray[key($distances)],
+            '_serialize' => ['markers']
+        ]);*/
+            return $cityArray[key($distances)];
+        }
+    }
+
+    private function distance($a, $b)
+    {
+        list($lat1, $lon1) = $a;
+        list($lat2, $lon2) = $b;
+
+        $theta = $lon1 - $lon2;
+        $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
+        $dist = acos($dist);
+        $dist = rad2deg($dist);
+        $miles = $dist * 60 * 1.1515;
+        return $miles;
+    }
     /**
      * Add method
      *
@@ -346,8 +555,10 @@ class MarkersController extends AppController
 
         $lat === null ? $lat = -7.256177 : $lat = $lat;
         $lng === null ? $long = 112.752268 : $long = $lng;
+        $city = $this->nearestCity($lat, $lng);
         $category = null ? $category = '#MACET' : $category = '#' . strtoupper($category);
         $status = 'dimanamacet.com (' . date('H:i', strtotime($time)) . ') ';
+        $status = $status . ' #' . strtoupper($city[1]) . ' ';
 
         if ($category_id !== 3) {
             $status = $status . $category . ' ';
