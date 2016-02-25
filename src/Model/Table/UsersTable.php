@@ -15,6 +15,7 @@ use Cake\Auth\DefaultPasswordHasher;
  * @property \Cake\ORM\Association\HasMany $Markers
  * @property \Cake\ORM\Association\HasMany $Activities
  * @property \Cake\ORM\Association\HasMany $Markerviews
+ * @property \Cake\ORM\Association\HasMany $Logs
  * @property \Cake\ORM\Association\BelongsTo $Regions
  */
 class UsersTable extends Table
@@ -49,6 +50,9 @@ class UsersTable extends Table
             'foreignKey' => 'user_id'
         ]);
         $this->hasMany('Activities', [
+            'foreignKey' => 'user_id'
+        ]);
+        $this->hasMany('Logs', [
             'foreignKey' => 'user_id'
         ]);
     }

@@ -17,6 +17,7 @@ use Cake\Auth\DefaultPasswordHasher;
  * @property \App\Model\Entity\Marker[] $markers
  * @property \App\Model\Entity\Activity[] $activities
  * @property \App\Model\Entity\Markerview[] $markerviews
+ * @property \App\Model\Entity\Log[] $logs
  * @property \App\Model\Entity\Region $region
  */
 class User extends Entity

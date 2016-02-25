@@ -146,17 +146,46 @@ class MarkersController extends AppController
         }
     }
 
+    public function testPlace($lat = null, $lng = null) {
+        if ($lat !== null && $lng !== null) {
+            $this->Places = TableRegistry::get('Places');
+
+            // first check if place exist on table
+            $options = [
+                'conditions' => [
+                    'CAST(lat AS DECIMAL(10,6)) =' => $lat,
+                    'CAST(lng AS DECIMAL(10,6)) =' => $lng
+                ]
+            ];
+            $place = $this->Places->find('all', $options);
+            $placeCount = $place->count();
+
+            $this->set([
+                'place' => $place,
+                'lat' => $lat,
+                'marker' => $placeCount,
+                '_serialize' => ['place' , 'lat', 'marker']
+            ]);
+
+        }
+    }
     private function savePlace($placeName = null, $lat = null, $lng = null)
     {
         if ($lat !== null && $lng !== null) {
             $this->Places = TableRegistry::get('Places');
 
+            $options = [
+                'conditions' => [
+                    'CAST(lat AS DECIMAL(10,6)) =' => $lat,
+                    'CAST(lng AS DECIMAL(10,6)) =' => $lng
+                ]
+            ];
             // first check if place exist on table
-            $placeCount = $this->Places->find()
-                ->where(['lat' => $lat, 'lng' => $lng])
-                ->count();
 
-            if ($placeCount === 0) {
+            $place = $this->Places->find('all', $options);
+            $placeCount = $place->count();
+
+            if ($placeCount < 1) {
                 $dataToSave = [
                     'name' => $placeName,
                     'lat' => $lat,
@@ -210,6 +239,13 @@ class MarkersController extends AppController
                 ->where(['Markers.id' => $id])
                 ->first();
 
+            $this->Places = TableRegistry::get('Places');
+
+            $place = $this->Places->find()
+                ->select(['name'])
+                ->where(['lat' => $marker['lat'], 'lng' => $marker['lng']])
+                ->first();
+
             // find respondent
             $respondent = $this->Markers->Respondents->find()
                 ->select(['name'])
@@ -224,7 +260,9 @@ class MarkersController extends AppController
                 $marker['respondent']['name'] = 'TMC';
             }
 
+            //$this->postTweetFromSource($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id'], $place['name']);
             $this->postTweetFromSource($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id'], $marker['twitPlaceName']);
+
         }
     }
 
@@ -274,6 +312,20 @@ class MarkersController extends AppController
             $exec = $Twitter->setPostfields($postFields)
                 ->buildOauth($url, $requestMethod)
                 ->performRequest();
+            //->performRequest(true, ['CURLOPT_TIMEOUT' => 20]);
+
+            $message = json_decode($exec, true);
+
+            if (array_key_exists('errors', $message)) {
+                $dataToSave = [
+                    'user_id' => $this->Auth->user('id'),
+                    'controller' => 'Markers',
+                    'action' => 'postTweetFromSource',
+                    'name' => $message['errors'][0]['message']
+                ];
+                $log = $this->Markers->Users->Logs->newEntity($dataToSave);
+                $this->Markers->Users->Logs->save($log);
+            }
         }
     }
 
@@ -281,12 +333,19 @@ class MarkersController extends AppController
     private function nearestCity($lat = null, $lng = null) {
         if($lat !== null && $lng !== null) {
             $items = [
-                [155, 'Kep Seribu', -6.193689, 106.851158],
+                //[155, 'Kep Seribu', -6.193689, 106.851158],
                 [156, 'Jakarta', -6.186486, 106.834091],
                 [157, 'Jakarta', -6.138414, 106.863953],
                 [158, 'Jakarta', -6.168329, 106.758850],
                 [159, 'Jakarta', -6.261493, 106.810600],
                 [160, 'Jakarta', -6.225014, 106.900444],
+                [267, 'Lebak', -6.564396, 106.252213],
+                [268, 'Tangerang', -6.187210, 106.487709],
+                [269, 'Serang', -6.139734, 106.040504],
+                [270, 'Tangerang', -6.202394, 106.652710],
+                [271, 'Cilegon', -6.002534, 106.011124],
+                [272, 'Serang', -6.110366, 106.163979],
+                [273, 'Tangerang Selatan', -6.283522, 106.711296],
                 [161, 'Bogor', -6.551776, 106.629128],
                 [162, 'Suumi', -7.213405, 106.629128],
                 [163, 'Cianjur', -7.357977, 107.195717],
@@ -355,12 +414,19 @@ class MarkersController extends AppController
             ];
 
             $itemsJakarta = [
-                [155, 'Kep Seribu', -6.193689, 106.851158],
+                //[155, 'Kep Seribu', -6.193689, 106.851158],
                 [156, 'Jakarta', -6.186486, 106.834091],
                 [157, 'Jakarta', -6.138414, 106.863953],
                 [158, 'Jakarta', -6.168329, 106.758850],
                 [159, 'Jakarta', -6.261493, 106.810600],
-                [160, 'Jakarta', -6.225014, 106.900444]
+                [160, 'Jakarta', -6.225014, 106.900444],
+                [267, 'Lebak', -6.564396, 106.252213],
+                [268, 'Tangerang', -6.187210, 106.487709],
+                [269, 'Serang', -6.139734, 106.040504],
+                [270, 'Tangerang', -6.202394, 106.652710],
+                [271, 'Cilegon', -6.002534, 106.011124],
+                [272, 'Serang', -6.110366, 106.163979],
+                [273, 'Tangerang Selatan', -6.283522, 106.711296]
             ];
 
             $itemsBandung = [
@@ -583,10 +649,40 @@ class MarkersController extends AppController
 
         $requestMethod = 'POST';
 
+        /*$exec = $Twitter->setPostfields($postFields)
+            ->buildOauth($url, $requestMethod)
+        ->performRequest();*/
+        //echo $exec;
+        //$message = json_decode($exec);
         $exec = $Twitter->setPostfields($postFields)
             ->buildOauth($url, $requestMethod)
             ->performRequest();
-        //echo $exec;
+        //->performRequest(true, ['CURLOPT_TIMEOUT' => 20]);
+
+        $message = json_decode($exec, true);
+
+        if (array_key_exists('errors', $message)) {
+            $dataToSave = [
+                'user_id' => $this->Auth->user('id'),
+                'controller' => 'Markers',
+                'action' => 'postTweet',
+                'name' => $message['errors'][0]['message']
+            ];
+            $log = $this->Markers->Users->Logs->newEntity($dataToSave);
+            $this->Markers->Users->Logs->save($log);
+        }
+
+        /*if (array_key_exists('errors', $message)) {
+            $dataToSave = [
+                'user_id' => $this->Auth->user('id'),
+                'controller' => 'Markers',
+                'action' => 'postTweetFromSource',
+                'name' => $message['errors'][0]['message']
+            ];
+            $log = $this->Markers->Users->Logs->newEntity($dataToSave);
+            $this->Markers->Users->Logs->save($log);
+        }*/
+
     }
 
     /**
