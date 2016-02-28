@@ -34,57 +34,80 @@ class PlacesController extends AppController
      */
     public function index()
     {
-        $limit = $this->limit;
-        if (isset($this->request->query['limit'])) {
-            if (is_numeric($this->request->query['limit'])) {
-                $limit = $this->request->query['limit'];
-            }
-        }
-
-        if (isset($this->request->query['searchName'])) {
-            $searchName = trim($this->request->query['searchName']);
-            $this->checkExistence($searchName, $limit);
+        if (isset($this->request->query['showAll']) && $this->request->query['showAll'] == true) {
+            $this->showAll();
         } else {
-            $offset = 0;
-            if (isset($this->request->query['page'])) {
-                if (is_numeric($this->request->query['page'])) {
-                    $offset = $this->request->query['page'] - 1;
+            $limit = $this->limit;
+            if (isset($this->request->query['limit'])) {
+                if (is_numeric($this->request->query['limit'])) {
+                    $limit = $this->request->query['limit'];
                 }
             }
 
-            $query = '';
-            if (isset($this->request->query['query'])) {
-                if (!empty(trim($this->request->query['query']))) {
-                    $query = trim($this->request->query['query']);
+            if (isset($this->request->query['searchName'])) {
+                $searchName = trim($this->request->query['searchName']);
+                $this->checkExistence($searchName, $limit);
+            } else {
+                $offset = 0;
+                if (isset($this->request->query['page'])) {
+                    if (is_numeric($this->request->query['page'])) {
+                        $offset = $this->request->query['page'] - 1;
+                    }
                 }
+
+                $query = '';
+                if (isset($this->request->query['query'])) {
+                    if (!empty(trim($this->request->query['query']))) {
+                        $query = trim($this->request->query['query']);
+                    }
+                }
+
+                $fetchDataOptions = [
+                    'conditions' => ['Places.active' => true],
+                    'order' => ['Places.name' => 'ASC'],
+                    'limit' => $limit,
+                    'page' => $offset
+                ];
+
+                if (!empty(trim($query))) {
+                    $fetchDataOptions['conditions']['LOWER(Places.name) LIKE'] = '%' . strtolower($query) . '%';
+                }
+
+                $this->paginate = $fetchDataOptions;
+                $places = $this->paginate('Places');
+
+                $allPlaces = $this->Places->find('all', $fetchDataOptions);
+                $total = $allPlaces->count();
+
+                $meta = [
+                    'total' => $total
+                ];
+                $this->set([
+                    'places' => $places,
+                    'meta' => $meta,
+                    '_serialize' => ['places', 'meta']
+                ]);
             }
-
-            $fetchDataOptions = [
-                'conditions' => ['Places.active' => true],
-                'order' => ['Places.name' => 'ASC'],
-                'limit' => $limit,
-                'page' => $offset
-            ];
-
-            if (!empty(trim($query))) {
-                $fetchDataOptions['conditions']['LOWER(Places.name) LIKE'] = '%' . strtolower($query) . '%';
-            }
-
-            $this->paginate = $fetchDataOptions;
-            $places = $this->paginate('Places');
-
-            $allPlaces = $this->Places->find('all', $fetchDataOptions);
-            $total = $allPlaces->count();
-
-            $meta = [
-                'total' => $total
-            ];
-            $this->set([
-                'places' => $places,
-                'meta' => $meta,
-                '_serialize' => ['places', 'meta']
-            ]);
         }
+    }
+
+    public function showAll() {
+        $fetchDataOptions = [
+            'conditions' => ['Places.active' => true],
+            'order' => ['Places.name' => 'ASC']
+        ];
+        $allPlaces = $this->Places->find('all', $fetchDataOptions);
+        $total = $allPlaces->count();
+
+        $meta = [
+            'total' => $total
+        ];
+
+        $this->set([
+            'places' => $allPlaces,
+            'meta' => $meta,
+            '_serialize' => ['places', 'meta']
+        ]);
     }
 
     /**

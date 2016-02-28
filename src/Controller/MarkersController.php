@@ -154,14 +154,17 @@ class MarkersController extends AppController
             $options = [
                 'conditions' => [
                     'CAST(lat AS DECIMAL(10,6)) =' => $lat,
-                    'CAST(lng AS DECIMAL(10,6)) =' => $lng
-                ]
+                    'CAST(lng AS DECIMAL(10,6)) =' => $lng,
+                    'active' => 1
+                ],
+                'limit' => 1
             ];
-            $place = $this->Places->find('all', $options);
-            $placeCount = $place->count();
+            $place = $this->Places->find('all', $options)->toArray();
+            //$placeCount = $place->count();
+            $placeCount = 0;
 
             $this->set([
-                'place' => $place,
+                'place' => $place[0]['name'],
                 'lat' => $lat,
                 'marker' => $placeCount,
                 '_serialize' => ['place' , 'lat', 'marker']
@@ -240,11 +243,22 @@ class MarkersController extends AppController
                 ->first();
 
             $this->Places = TableRegistry::get('Places');
+            $options = [
+                'conditions' => [
+                    'CAST(lat AS DECIMAL(10,6)) =' => $marker['lat'],
+                    'CAST(lng AS DECIMAL(10,6)) =' => $marker['lng'],
+                    'active' => 1
+                ],
+                'limit' => 1
+            ];
+            // first check if place exist on table
 
-            $place = $this->Places->find()
+            $place = $this->Places->find('all', $options)->toArray();
+
+            /*$place = $this->Places->find()
                 ->select(['name'])
                 ->where(['lat' => $marker['lat'], 'lng' => $marker['lng']])
-                ->first();
+            ->first();*/
 
             // find respondent
             $respondent = $this->Markers->Respondents->find()
@@ -260,13 +274,13 @@ class MarkersController extends AppController
                 $marker['respondent']['name'] = 'TMC';
             }
 
-            //$this->postTweetFromSource($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id'], $place['name']);
-            $this->postTweetFromSource($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id'], $marker['twitPlaceName']);
+            $this->postTweetFromSource($id, $marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id'], $place[0]['name']);
+            //$this->postTweetFromSource($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id'], $marker['twitPlaceName']);
 
         }
     }
 
-    private function postTweetFromSource($info = null, $lat = null, $lng = null, $respondent = null, $category = null, $time = null, $category_id = 1, $placeName = null) {
+    private function postTweetFromSource($id = null, $info = null, $lat = null, $lng = null, $respondent = null, $category = null, $time = null, $category_id = 1, $placeName = null) {
         if (!empty(trim($placeName))) {
             $Twitter = new TwitterAPIExchange($this->settingsTwitter);
 
@@ -289,9 +303,20 @@ class MarkersController extends AppController
                 $status = $status . $category;
             }
 
-            $status = $status . ' via: ' . $respondent;
-            $status = $status . ' #dimanamacetid';
+            $statusWithRespondent = $status . ' via: ' . $respondent;
+
+            if (strlen($statusWithRespondent) < 141) {
+                $status = $statusWithRespondent;
+            }
+            //$status = $status . ' via: ' . $respondent;
             $status = preg_replace('!\s+!', ' ', $status);
+
+            //$status = $status . ' via: ' . $respondent;
+            $status = preg_replace('!\s+!', ' ', $status);
+
+            if (strlen($status) < 126) {
+                $status = $status . ' #dimanamacetid';
+            }
 
             $postfield = '?status=' . $status;
             $postfield = $postfield . '&lat=' . $lat;
@@ -320,8 +345,11 @@ class MarkersController extends AppController
                 $dataToSave = [
                     'user_id' => $this->Auth->user('id'),
                     'controller' => 'Markers',
+                    'controllerID' => $id,
                     'action' => 'postTweetFromSource',
-                    'name' => $message['errors'][0]['message']
+                    'name' => $message['errors'][0]['message'],
+                    'active' => 1
+                    //'name' => 'Success'
                 ];
                 $log = $this->Markers->Users->Logs->newEntity($dataToSave);
                 $this->Markers->Users->Logs->save($log);
@@ -345,9 +373,9 @@ class MarkersController extends AppController
                 [270, 'Tangerang', -6.202394, 106.652710],
                 [271, 'Cilegon', -6.002534, 106.011124],
                 [272, 'Serang', -6.110366, 106.163979],
-                [273, 'Tangerang Selatan', -6.283522, 106.711296],
+                [273, 'Tangsel', -6.283522, 106.711296],
                 [161, 'Bogor', -6.551776, 106.629128],
-                [162, 'Suumi', -7.213405, 106.629128],
+                [162, 'Sukabumi', -7.213405, 106.629128],
                 [163, 'Cianjur', -7.357977, 107.195717],
                 [164, 'Bandung', -7.134070, 107.621529],
                 [165, 'Garut', -7.501220, 107.763618],
@@ -365,7 +393,7 @@ class MarkersController extends AppController
                 [177, 'Bandung Barat', -6.865221, 107.491974],
                 [178, 'Pangandaran', -7.615061, 108.498825],
                 [179, 'Bogor', -6.597147, 106.806038],
-                [180, 'Suumi', -6.927736, 106.929955],
+                [180, 'Sukabumi', -6.927736, 106.929955],
                 [181, 'Bandung', -6.917464, 107.619125],
                 [182, 'Cirebon', -6.732023, 108.552315],
                 [183, 'Bekasi', -6.238270, 106.975571],
@@ -426,12 +454,12 @@ class MarkersController extends AppController
                 [270, 'Tangerang', -6.202394, 106.652710],
                 [271, 'Cilegon', -6.002534, 106.011124],
                 [272, 'Serang', -6.110366, 106.163979],
-                [273, 'Tangerang Selatan', -6.283522, 106.711296]
+                [273, 'Tangsel', -6.283522, 106.711296]
             ];
 
             $itemsBandung = [
                 [161, 'Bogor', -6.551776, 106.629128],
-                [162, 'Suumi', -7.213405, 106.629128],
+                [162, 'Sukabumi', -7.213405, 106.629128],
                 [163, 'Cianjur', -7.357977, 107.195717],
                 [164, 'Bandung', -7.134070, 107.621529],
                 [165, 'Garut', -7.501220, 107.763618],
@@ -449,7 +477,7 @@ class MarkersController extends AppController
                 [177, 'Bandung Barat', -6.865221, 107.491974],
                 [178, 'Pangandaran', -7.615061, 108.498825],
                 [179, 'Bogor', -6.597147, 106.806038],
-                [180, 'Suumi', -6.927736, 106.929955],
+                [180, 'Sukabumi', -6.927736, 106.929955],
                 [181, 'Bandung', -6.917464, 107.619125],
                 [182, 'Cirebon', -6.732023, 108.552315],
                 [183, 'Bekasi', -6.238270, 106.975571],
@@ -606,15 +634,29 @@ class MarkersController extends AppController
         if($id !== null) {
             $marker = $this->Markers->find()
                 ->contain(['Respondents', 'Categories'])
-                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Markers.twitTime', 'Markers.category_id', 'Respondents.name', 'Categories.name'])
+                ->select(['Markers.lat', 'Markers.lng', 'Markers.info', 'Markers.twitTime', 'Markers.category_id', 'Markers.respondent_id', 'Respondents.name', 'Categories.name'])
                 ->where(['Markers.id' => $id])
                 ->first();
 
-            $this->postTweet($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id']);
+            // find respondent
+            $respondent = $this->Markers->Respondents->find()
+                ->select(['name'])
+                ->where([
+                    'id' => $marker['respondent_id'],
+                    'isOfficial' => 1,
+                    'active' => 1
+                ])
+                ->first();
+
+            if(empty($respondent)) {
+                $marker['respondent']['name'] = 'TMC';
+            }
+
+            $this->postTweet($id, $marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id']);
         }
     }
 
-    private function postTweet($info = null, $lat = null, $lng = null, $respondent = null, $category = null, $time = null, $category_id = 1) {
+    private function postTweet($id = null, $info = null, $lat = null, $lng = null, $respondent = null, $category = null, $time = null, $category_id = 1) {
         $Twitter = new TwitterAPIExchange($this->settingsTwitter);
 
         $url = $this->baseTwitterUrl . 'statuses/update.json';
@@ -634,9 +676,17 @@ class MarkersController extends AppController
             $status = $status . $category;
         }
 
-        $status = $status . ' via: ' . $respondent;
-        $status = $status . ' #dimanamacetid';
+        $statusWithRespondent = $status . ' via: ' . $respondent;
+
+        if (strlen($statusWithRespondent) < 141) {
+            $status = $statusWithRespondent;
+        }
+        //$status = $status . ' via: ' . $respondent;
         $status = preg_replace('!\s+!', ' ', $status);
+
+        if (strlen($status) < 126) {
+            $status = $status . ' #dimanamacetid';
+        }
 
         $postfield = '?status=' . $status;
         $postfield = $postfield . '&lat=' . $lat;
@@ -665,6 +715,7 @@ class MarkersController extends AppController
             $dataToSave = [
                 'user_id' => $this->Auth->user('id'),
                 'controller' => 'Markers',
+                'controllerID' => $id,
                 'action' => 'postTweet',
                 'name' => $message['errors'][0]['message']
             ];
@@ -672,16 +723,17 @@ class MarkersController extends AppController
             $this->Markers->Users->Logs->save($log);
         }
 
-        /*if (array_key_exists('errors', $message)) {
+        if (array_key_exists('errors', $message)) {
             $dataToSave = [
                 'user_id' => $this->Auth->user('id'),
                 'controller' => 'Markers',
                 'action' => 'postTweetFromSource',
-                'name' => $message['errors'][0]['message']
+                'name' => $message['errors'][0]['message'],
+                'active' => 1
             ];
             $log = $this->Markers->Users->Logs->newEntity($dataToSave);
             $this->Markers->Users->Logs->save($log);
-        }*/
+        }
 
     }
 

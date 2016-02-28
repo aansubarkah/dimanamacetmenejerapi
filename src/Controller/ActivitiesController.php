@@ -62,6 +62,7 @@ class ActivitiesController extends AppController
 
         // user count 6 days before today
         $weekly = [];
+        $totalDay = 0;
         for($i = 0; $i < 6; $i++) {
             $days = '-' . (6-$i) . ' days';
             $date = date('Y-m-d', strtotime($days));

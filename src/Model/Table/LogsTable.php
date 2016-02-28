@@ -27,6 +27,7 @@ class LogsTable extends Table
 
         $this->table('logs');
         $this->displayField('name');
+        $this->primaryKey('id');
 
         $this->addBehavior('Timestamp');
 
@@ -45,11 +46,13 @@ class LogsTable extends Table
     public function validationDefault(Validator $validator)
     {
         $validator
-            ->requirePresence('id', 'create')
-            ->notEmpty('id');
+            ->allowEmpty('id', 'create');
 
         $validator
             ->allowEmpty('controller');
+
+        $validator
+            ->allowEmpty('controllerID');
 
         $validator
             ->allowEmpty('action');

@@ -34,70 +34,108 @@ class RespondentsController extends AppController
      */
     public function index()
     {
-        $limit = $this->limit;
-        if (isset($this->request->query['limit'])) {
-            if (is_numeric($this->request->query['limit'])) {
-                $limit = $this->request->query['limit'];
-            }
-        }
-
-        if (isset($this->request->query['searchName'])) {
-            $searchName = trim($this->request->query['searchName']);
-            $this->checkExistence($searchName, $limit);
+        if (isset($this->request->query['showAll'])) {
+            $this->showAll();
         } else {
-            $page = 1;
-            $offset = 0;
-            if (isset($this->request->query['page'])) {
-                if (is_numeric($this->request->query['page'])) {
-                    $page = (int)$this->request->query['page'];
-                    $offset = ($page - 1) * $limit;
+            $limit = $this->limit;
+            if (isset($this->request->query['limit'])) {
+                if (is_numeric($this->request->query['limit'])) {
+                    $limit = $this->request->query['limit'];
                 }
             }
 
-            $query = '';
-            if (isset($this->request->query['query'])) {
-                if (!empty(trim($this->request->query['query']))) {
-                    $query = trim($this->request->query['query']);
-                }
-            }
-
-            $conditions['Respondents.isOfficial'] = true;
-            if (!isset($this->request->query['displayAllOfficial'])) {
-                $conditions['Respondents.active'] = true;
+            if (isset($this->request->query['searchName'])) {
+                $searchName = trim($this->request->query['searchName']);
+                $this->checkExistence($searchName, $limit);
             } else {
-                $limit = 1000;
+                $page = 1;
+                $offset = 0;
+                if (isset($this->request->query['page'])) {
+                    if (is_numeric($this->request->query['page'])) {
+                        $page = (int)$this->request->query['page'];
+                        $offset = ($page - 1) * $limit;
+                    }
+                }
+
+                $query = '';
+                if (isset($this->request->query['query'])) {
+                    if (!empty(trim($this->request->query['query']))) {
+                        $query = trim($this->request->query['query']);
+                    }
+                }
+
+                $conditions['Respondents.isOfficial'] = true;
+                if (!isset($this->request->query['displayAllOfficial'])) {
+                    $conditions['Respondents.active'] = true;
+                } else {
+                    $limit = 1000;
+                }
+
+                if (!empty(trim($query))) {
+                    $conditions['LOWER(Respondents.name) LIKE'] = '%' . strtolower($query) . '%';
+                }
+
+                $respondents = $this->Respondents->find()
+                    ->where($conditions)
+                    ->order(['Respondents.name' => 'ASC'])
+                    ->limit($limit)->page($page)->offset($offset)
+                    ->toArray();
+
+                $allRespondents = $this->Respondents->find()->where($conditions);
+                $total = $allRespondents->count();
+
+                // add group, to please Ember.js belongsTo
+                // always use count($array), do not using $total
+                // @param $countRespondents
+                $countRespondents = count($respondents);
+                for ($i = 0; $i < $countRespondents; $i++) {
+                    $respondents[$i]['group'] = $respondents[$i]['group_id'];
+                }
+
+                $meta = [
+                    'total' => $total
+                ];
+                $this->set([
+                    'respondents' => $respondents,
+                    'meta' => $meta,
+                    '_serialize' => ['respondents', 'meta']
+                ]);
             }
-
-            if (!empty(trim($query))) {
-                $conditions['LOWER(Respondents.name) LIKE'] = '%' . strtolower($query) . '%';
-            }
-
-            $respondents = $this->Respondents->find()
-                ->where($conditions)
-                ->order(['Respondents.name' => 'ASC'])
-                ->limit($limit)->page($page)->offset($offset)
-                ->toArray();
-
-            $allRespondents = $this->Respondents->find()->where($conditions);
-            $total = $allRespondents->count();
-
-            // add group, to please Ember.js belongsTo
-            // always use count($array), do not using $total
-            // @param $countRespondents
-            $countRespondents = count($respondents);
-            for ($i = 0; $i < $countRespondents; $i++) {
-                $respondents[$i]['group'] = $respondents[$i]['group_id'];
-            }
-
-            $meta = [
-                'total' => $total
-            ];
-            $this->set([
-                'respondents' => $respondents,
-                'meta' => $meta,
-                '_serialize' => ['respondents', 'meta']
-            ]);
         }
+    }
+
+    public function showAll() {
+        $user_id = $this->Auth->user('id');
+        $user = $this->Respondents->Regions->Users->find()
+            ->where(['id' => $user_id])
+            ->first();
+
+        $fetchDataOptions = [
+            'conditions' => [
+                'isOfficial' => true
+            ],
+            'order' => ['name' => 'ASC']
+        ];
+
+        if ($user['region_id'] != 1) {
+            $fetchDataOptions['conditions']['OR'] = [
+                ['region_id' => 1],
+                ['region_id' => $user['region_id']]
+            ];
+        }
+
+        $allRespondents = $this->Respondents->find('all', $fetchDataOptions);
+        $total = $allRespondents->count();
+
+        $meta = [
+            'total' => $total
+        ];
+
+        $this->set([
+            'respondents' => $allRespondents,
+            'meta' => $meta,
+            '_serialize' => ['respondents', 'meta']
+        ]);
     }
 
     /**
@@ -178,47 +216,47 @@ class RespondentsController extends AppController
             $respondent->active = false;
             if ($this->Respondents->save($respondent)) {
                 $message = 'Deleted';
-            } else {
-                $message = 'Error';
-            }
-        }
-        $this->set([
-            'respondent' => $respondent,
-            '_serialize' => ['respondent']
-        ]);
-    }
+} else {
+    $message = 'Error';
+}
+}
+$this->set([
+    'respondent' => $respondent,
+    '_serialize' => ['respondent']
+]);
+}
 
-    public function checkExistence($name = null, $limit = 25)
-    {
-        $data = [
-            [
-                'id' => 0,
-                'name' => '',
-                'active' => 0
-            ]
-        ];
+public function checkExistence($name = null, $limit = 25)
+{
+    $data = [
+        [
+            'id' => 0,
+            'name' => '',
+            'active' => 0
+        ]
+    ];
 
-        $fetchDataOptions = [
-            'order' => ['Respondents.name' => 'ASC'],
-            'limit' => $limit
-        ];
+    $fetchDataOptions = [
+        'order' => ['Respondents.name' => 'ASC'],
+        'limit' => $limit
+    ];
 
-        $query = trim(strtolower($name));
+    $query = trim(strtolower($name));
 
-        if (!empty($query)) {
-            $fetchDataOptions['conditions']['LOWER(Respondents.name) LIKE'] = '%' . $query . '%';
-        }
-        $fetchDataOptions['conditions']['active'] = true;
+    if (!empty($query)) {
+        $fetchDataOptions['conditions']['LOWER(Respondents.name) LIKE'] = '%' . $query . '%';
+}
+$fetchDataOptions['conditions']['active'] = true;
 
-        $respondent = $this->Respondents->find('all', $fetchDataOptions);
+$respondent = $this->Respondents->find('all', $fetchDataOptions);
 
-        if ($respondent->count() > 0) {
-            $data = $respondent;
-        }
+if ($respondent->count() > 0) {
+    $data = $respondent;
+}
 
-        $this->set([
-            'respondent' => $data,
-            '_serialize' => ['respondent']
-        ]);
-    }
+$this->set([
+    'respondent' => $data,
+    '_serialize' => ['respondent']
+]);
+}
 }
