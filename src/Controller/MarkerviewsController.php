@@ -79,7 +79,7 @@ class MarkerviewsController extends AppController
         ];
 
         if (!empty(trim($query))) {
-            $conditions['LOWER(Markerviews.place_name) LIKE'] = '%' . strtolower($query) . '%';
+            $conditions['LOWER(Markerviews.info) LIKE'] = '%' . strtolower($query) . '%';
         }
 
         $markerviews = $this->Markerviews->find()

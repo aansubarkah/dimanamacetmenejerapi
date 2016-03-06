@@ -276,7 +276,109 @@ class MarkersController extends AppController
 
             $this->postTweetFromSource($id, $marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id'], $place[0]['name']);
             //$this->postTweetFromSource($marker['info'], $marker['lat'], $marker['lng'], $marker['respondent']['name'], $marker['category']['name'], $marker['twitTime'], $marker['category_id'], $marker['twitPlaceName']);
+        }
+    }
 
+    private function postLongTweetFromSource($id = null, $info = null, $lat = null, $lng = null, $respondent = null, $category = null, $time = null, $category_id = 1, $placeName = null) {
+        if (!empty(trim($placeName))) {
+            $Twitter = new TwitterAPIExchange($this->settingsTwitter);
+
+            $url = $this->baseTwitterUrl . 'statuses/update.json';
+
+            $lat === null ? $lat = -7.256177 : $lat = $lat;
+            $lng === null ? $long = 112.752268 : $long = $lng;
+            $city = $this->nearestCity($lat, $lng);
+            $category = null ? $category = '#MACET' : $category = '#' . strtoupper($category);
+            $identity = 'dimanamacet.com (' . date('H:i', strtotime($time)) . ') ';
+            $cityHashtag = '#' . strtoupper($city[1]) . ' ';
+            $placeInfo = $placeName . ' ' . $info;
+            $via = ' via: ' . $respondent . ' ';
+            $identityHashtag = '#dimanamacetid';
+            $placeInfoArr = preg_split('/[,.\s;]+/', $placeInfo);
+            $i = 1;
+            $mustLen = strlen($identity) + strlen($city) + strlen($category) + strlen($via) + strlen($identityHashtag);
+            $dataLen = strlen($placeInfo);
+
+            if ($mustLen > 140) {
+                return;
+            }
+
+            $status = $identity . $cityHashtag . ' ';
+            if ($category_id !== 3) {
+                $status = $status . $category . ' ';
+            }
+            $statusBeforeInfo = $status;
+
+            foreach ($placeInfoArr as $word) {
+                $wordLen = strlen($word);
+                if (($mustLen + $wordLen) < 141) {
+                    $status = $status . $word . ' ';
+                } else {
+                    $status = $statusBeforeInfo;
+                }
+            }
+
+            if ($category_id !== 3) {
+                $status = $status . $category . ' ';
+                $status = $status . $placeName . ' ';
+                $status = $status . $info;
+            } else {
+                $status = $status . $placeName . ' ';
+                $status = $status . $info . ' ';
+                $status = $status . $category;
+            }
+
+            $statusWithRespondent = $status . ' via: ' . $respondent;
+
+            if (strlen($statusWithRespondent) < 141) {
+                $status = $statusWithRespondent;
+            }
+            //$status = $status . ' via: ' . $respondent;
+            $status = preg_replace('!\s+!', ' ', $status);
+
+            //$status = $status . ' via: ' . $respondent;
+            //$status = preg_replace('!\s+!', ' ', $status);
+
+            if (strlen($status) < 126) {
+                $status = $status . ' #dimanamacetid';
+            }
+
+            $postfield = '?status=' . $status;
+            $postfield = $postfield . '&lat=' . $lat;
+            $postfield = $postfield . '&long=' . $long;
+            $postFields = [
+                'status' => $status,
+                'lat' => $lat,
+                'long' => $long
+            ];
+
+            $requestMethod = 'POST';
+
+        /*$this->set([
+            'marker' => $status,
+            '_serialize' => ['marker']
+        ]);*/
+
+            $exec = $Twitter->setPostfields($postFields)
+                ->buildOauth($url, $requestMethod)
+                ->performRequest();
+            //->performRequest(true, ['CURLOPT_TIMEOUT' => 20]);
+
+            $message = json_decode($exec, true);
+
+            if (array_key_exists('errors', $message)) {
+                $dataToSave = [
+                    'user_id' => $this->Auth->user('id'),
+                    'controller' => 'Markers',
+                    'controllerID' => $id,
+                    'action' => 'postTweetFromSource',
+                    'name' => $message['errors'][0]['message'],
+                    'active' => 1
+                    //'name' => 'Success'
+                ];
+                $log = $this->Markers->Users->Logs->newEntity($dataToSave);
+                $this->Markers->Users->Logs->save($log);
+            }
         }
     }
 
@@ -312,7 +414,7 @@ class MarkersController extends AppController
             $status = preg_replace('!\s+!', ' ', $status);
 
             //$status = $status . ' via: ' . $respondent;
-            $status = preg_replace('!\s+!', ' ', $status);
+            //$status = preg_replace('!\s+!', ' ', $status);
 
             if (strlen($status) < 126) {
                 $status = $status . ' #dimanamacetid';
@@ -613,6 +715,10 @@ class MarkersController extends AppController
                 //$this->request->data['marker']['user_id'] = 1;
                 $marker = $this->Markers->newEntity($this->request->data['marker']);
                 $this->Markers->save($marker);
+
+                // add places
+                $this->savePlace($this->request->data['marker']['twitPlaceName'], $this->request->data['marker']['lat'], $this->request->data['marker']['lng']);
+
 
                 // post tweet
                 $this->convertPostToTweet($marker->id);

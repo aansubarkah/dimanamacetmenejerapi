@@ -230,4 +230,46 @@ class PlacesController extends AppController
             '_serialize' => ['place']
         ]);
     }
+
+    public function renameStreet() {
+        $places = $this->Places->find('all', [
+            'conditions' => ['active' => 1],
+            'order' => ['name' => 'ASC'],
+            //'limit' => 10
+        ]);
+
+        foreach ($places as $place) {
+            //$newPlace = $this->Places->find('')
+            $newName = $place['name'];
+            $newName = trim($newName);
+            $newName = str_replace('Jalan', 'Jl.', $newName);
+            $newName = str_replace('#Tol', 'Tol', $newName);
+            $newName = str_replace('#Tol_', 'Tol ', $newName);
+            $newName = str_replace('Exit Gerbang Tol', 'GT', $newName);
+            $newName = str_replace('Gerbang Tol', 'GT', $newName);
+            $newName = str_replace('Keluar Tol', 'GT', $newName);
+            $newName = str_replace(' :', ':', $newName);
+            $newName = str_replace(' | ', ' - ', $newName);
+            $newName = str_replace(' menuju ', ' arah ', $newName);
+            $newName = preg_replace('!\s+!', ' ', $newName);
+
+            //$newName = str_replace
+
+            $query = $this->Places->get($place['id']);
+            $query->name = $newName;
+            $this->Places->save($query);
+        }
+
+        $allPlaces = $this->Places->find('all', [
+            'conditions' => ['active' => 1],
+            'order' => ['name' => 'ASC'],
+            //'limit' => 10
+        ]);
+
+
+        $this->set([
+            'place' => $allPlaces,
+            '_serialize' => ['place']
+        ]);
+    }
 }
