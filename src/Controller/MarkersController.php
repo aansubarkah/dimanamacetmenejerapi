@@ -405,7 +405,9 @@ class MarkersController extends AppController
                 $status = $status . $category;
             }
 
-            $statusWithRespondent = $status . ' via: ' . $respondent;
+            $respondent = str_replace(' ', '', $respondent);
+            $statusWithRespondent = $status . ' #' . $respondent;
+            //$statusWithRespondent = $status . ' via: ' . $respondent;
 
             if (strlen($statusWithRespondent) < 141) {
                 $status = $statusWithRespondent;
@@ -556,7 +558,35 @@ class MarkersController extends AppController
                 [270, 'Tangerang', -6.202394, 106.652710],
                 [271, 'Cilegon', -6.002534, 106.011124],
                 [272, 'Serang', -6.110366, 106.163979],
-                [273, 'Tangsel', -6.283522, 106.711296]
+                [273, 'Tangsel', -6.283522, 106.711296],
+                [161, 'Bogor', -6.551776, 106.629128],
+                [162, 'Sukabumi', -7.213405, 106.629128],
+                [163, 'Cianjur', -7.357977, 107.195717],
+                [164, 'Bandung', -7.134070, 107.621529],
+                [165, 'Garut', -7.501220, 107.763618],
+                [166, 'Tasikmalaya', -7.651331, 108.142868],
+                [167, 'Ciamis', -7.332077, 108.349251],
+                [168, 'Kuningan', -7.013805, 108.570061],
+                [169, 'Cirebon', -6.689888, 108.475082],
+                [170, 'Majalengka', -6.779060, 108.285202],
+                [171, 'Sumedang', -6.832858, 107.953186],
+                [172, 'Indramayu', -6.337310, 108.325836],
+                [173, 'Subang', -6.348762, 107.763618],
+                [174, 'Purwakarta', -6.564924, 107.432198],
+                [175, 'Karawang', -6.322730, 107.337578],
+                [176, 'Bekasi', -6.247447, 107.148453],
+                [177, 'Bandung Barat', -6.865221, 107.491974],
+                [178, 'Pangandaran', -7.615061, 108.498825],
+                [179, 'Bogor', -6.597147, 106.806038],
+                [180, 'Sukabumi', -6.927736, 106.929955],
+                [181, 'Bandung', -6.917464, 107.619125],
+                [182, 'Cirebon', -6.732023, 108.552315],
+                [183, 'Bekasi', -6.238270, 106.975571],
+                [184, 'Depok', -6.402484, 106.794243],
+                [185, 'Cimahi', -6.884082, 107.541306],
+                [186, 'Tasikmalaya', -7.350581, 108.217163],
+                [187, 'Banjar', -7.370687, 108.534248]
+
             ];
 
             $itemsBandung = [
@@ -782,7 +812,9 @@ class MarkersController extends AppController
             $status = $status . $category;
         }
 
-        $statusWithRespondent = $status . ' via: ' . $respondent;
+        //$statusWithRespondent = $status . ' via: ' . $respondent;
+        $respondent = str_replace(' ', '', $respondent);
+        $statusWithRespondent = $status . ' #' . $respondent;
 
         if (strlen($statusWithRespondent) < 141) {
             $status = $statusWithRespondent;
