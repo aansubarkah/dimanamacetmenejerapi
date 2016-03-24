@@ -10,6 +10,7 @@ use Cake\Validation\Validator;
 /**
  * Places Model
  *
+ * @property \Cake\ORM\Association\BelongsTo $Regions
  */
 class PlacesTable extends Table
 {
@@ -28,6 +29,10 @@ class PlacesTable extends Table
         $this->displayField('name');
         $this->primaryKey('id');
 
+        $this->belongsTo('Regions', [
+            'foreignKey' => 'region_id',
+            'joinType' => 'INNER'
+        ]);
     }
 
     /**

@@ -11,6 +11,7 @@ use Cake\ORM\Entity;
  * @property float $lat
  * @property float $lng
  * @property bool $active
+ * @property \App\Model\Entity\Region $region
  */
 class Place extends Entity
 {

@@ -58,7 +58,6 @@ class MarkersController extends AppController
                         'Markers.pinned' => true,
                         'Markers.cleared' => false,
                     ]
-
                 ],
 
             ],
@@ -189,8 +188,10 @@ class MarkersController extends AppController
             $placeCount = $place->count();
 
             if ($placeCount < 1) {
+                $region_id = $this->Auth->user('region_id');
                 $dataToSave = [
                     'name' => $placeName,
+                    'region_id' => $region_id,
                     'lat' => $lat,
                     'lng' => $lng,
                     'active' => 1

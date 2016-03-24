@@ -2,6 +2,7 @@
 namespace App\Controller;
 
 use App\Controller\AppController;
+use Cake\ORM\TableRegistry;
 
 /**
  * Markerviews Controller
@@ -12,6 +13,8 @@ use App\Controller\AppController;
 class MarkerviewsController extends AppController
 {
     public $limit = 25;
+
+    public $Markers = null;
 
     public $paginate = [
         'fields' => ['Markerviews.id', 'Markerviews.name', 'Markerviews.active'],
@@ -35,6 +38,7 @@ class MarkerviewsController extends AppController
      */
     public function index()
     {
+        $this->Markers = TableRegistry::get('Markers');
         $limit = $this->limit;
         if (isset($this->request->query['limit'])) {
             if (is_numeric($this->request->query['limit'])) {
@@ -67,29 +71,51 @@ class MarkerviewsController extends AppController
         }
 
         $conditions = [
-            'Markerviews.active' => true,
+            'Markers.active' => true,
             'OR' => [
+                'Markers.created >=' => date('Y-m-d H:i:s', strtotime($lastMinutesString)),
+                'AND' => [
+                    'Markers.active' => true
+                ]
+            ]
+                        /*'OR' => [
                 'Markerviews.created >=' => date('Y-m-d H:i:s', strtotime($lastMinutesString)),
                 'AND' => [
                     'Markerviews.active' => true,
                     //    'Markerviews.pinned' => true,
                     //    'Markerviews.cleared' => false,
                 ]
-            ]
+            ]*/
         ];
 
         if (!empty(trim($query))) {
-            $conditions['LOWER(Markerviews.info) LIKE'] = '%' . strtolower($query) . '%';
+            $conditions['LOWER(Markers.info) LIKE'] = '%' . strtolower($query) . '%';
         }
 
-        $markerviews = $this->Markerviews->find()
+        $markers = $this->Markers->find('all')
+            ->contain([
+                'Categories', 'Weather', 'Respondents'
+            ])
+            ->select([
+                'Markers.id', 'Markers.category_id', 'Markers.user_id', 'Markers.respondent_id',
+                'Markers.weather_id', 'Markers.lat', 'Markers.lng', 'Markers.created', 'Markers.modified',
+                'Markers.info', 'Markers.twitID', 'Markers.twitPlaceName', 'Markers.twitPlaceID',
+                'Markers.twitTime', 'Markers.twitURL', 'Markers.isTwitPlacePrecise', 'Markers.twitImage',
+                'Markers.pinned', 'Markers.cleared', 'Markers.active',
+                'isPlaceNameExist' => 1,
+                'place_name' => 'Markers.twitPlaceName',
+                'category_name' => 'Categories.name',
+                'respondent_name' => 'Respondents.name', 'respondent_contact' => 'Respondents.contact',
+                'weather_name' => 'Weather.name'
+                //'Categories.name AS category_name'
+            ])
             ->where($conditions)
-            ->group(['id'])
-            ->order(['Markerviews.created' => 'DESC'])
+            //->group(['id'])
+            ->order(['Markers.created' => 'DESC'])
             ->limit($limit)->page($page)->offset($offset)
             ->toArray();
-        $allMarkerviews = $this->Markerviews->find()->where($conditions);
-        $total = $allMarkerviews->count();
+        $allMarkers = $this->Markers->find()->where($conditions);
+        $total = $allMarkers->count();
 
         /*
          * for now, it disabled
@@ -128,12 +154,10 @@ class MarkerviewsController extends AppController
             ->count();*/
 
         $meta = [
-            'total' => $total/*,
-            'postByUser' => $userTotalMarkers + $userTotalToday,
-            'postToday' => $userTotalToday*/
+            'total' => $total
         ];
         $this->set([
-            'markerviews' => $markerviews,
+            'markerviews' => $markers,
             'meta' => $meta,
             '_serialize' => ['markerviews', 'meta']
         ]);
