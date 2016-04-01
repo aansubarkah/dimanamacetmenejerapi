@@ -11,13 +11,147 @@ use App\Controller\AppController;
 class SourcesController extends AppController
 {
 
-    public $limit = 25;
+    public $limit = 5;
     /**
      * Index method
      *
      * @return void
      */
     public function index()
+    {
+        $respondent_id = null;
+        if (!empty($this->request->query['respondentID'])) {
+            $respondent_id = $this->request->query['respondentID'];
+        }
+
+        $region_id = 1;
+        $conditions = [];
+        $sources = [];
+        $total = 0;
+
+        if (isset($this->request->query['older']) && $this->request->query['older'] == true) {
+            $limit = 5;
+            if (isset($this->request->query['min_id'])) {
+                $minId = (int)$this->request->query['min_id'];
+                if (is_numeric($minId)) {
+                    $conditions[] = ['id <' => $minId];
+                }
+            }
+        }
+
+        if (isset($this->request->query['newer']) && $this->request->query['newer'] == true) {
+            if (isset($this->request->query['max_id']) && is_numeric($this->request->query['max_id'])) {
+                $conditions[] = ['id >' => $this->request->query['max_id']];
+            }
+        }
+
+        $lastMinutesString = '-30 minutes';// change on production
+        if (!isset($this->request->query['older']) && !isset($this->request->query['newer'])) {
+            //$conditions[] = ['twitTime >=' => date('Y-m-d H:i:s', strtotime($lastMinutesString))];
+            $limit = $this->limit;
+        }
+
+        if (isset($this->request->query['page'])) {
+            if ($this->request->query['page'] == 1) {
+            //if (is_numeric($this->request->query['page'])) {
+                $page = 1;
+                $offset = 0;
+                //$page = (int)$this->request->query['page'];
+                //$offset = ($page - 1) * $limit;
+            }
+        }
+
+        // get user region
+        $user = $this->Sources->Regions->Users->get($this->Auth->user('id'));
+
+        if(!empty($respondent_id)) {
+            $conditions[]=['respondent_id' => $respondent_id];
+        } else {
+            if ($user['region_id'] !== 1) {
+                $conditions['OR'] = [
+                    ['region_id' => 1],
+                    ['region_id' => $user['region_id']]
+                ];
+            }
+        }
+
+        $conditions[] = ['active' => 1];
+        $conditions[] = ['isImported' => 0];
+
+        if (isset($limit)) {
+            if (isset($page)) {
+                $sources = $this->Sources->find()
+                    ->where($conditions)
+                    ->order(['twitTime' => 'DESC'])
+                    ->limit($limit)->page($page)->offset($offset)
+                    ->toArray();
+            } else {
+                $sources = $this->Sources->find()
+                    ->where($conditions)
+                    ->order(['twitTime' => 'DESC'])
+                    ->limit($limit)
+                    ->toArray();
+            }
+        } else {
+            $sources = $this->Sources->find()
+                ->where($conditions)
+                ->order(['twitTime' => 'DESC'])
+                ->toArray();
+        }
+        $sourcesCount = count($sources);
+
+        // max and min id on sources table
+        $maxId = 0;
+        $minId = 0;
+        if ($sourcesCount > 0) {
+            $getMaxMin = $this->maxMinId($sources);
+            $maxId = $getMaxMin[0];
+            $minId = $getMaxMin[1];
+            //$maxId = $sources[0]['id'];
+            //$minId = $sources[$sourcesCount - 1]['id'];
+        } else {
+            $sources[] = [
+                'id' => 0,
+                'respondent_id' => 0,
+                'region_id' => 0
+            ];
+        }
+
+        $meta = [
+            'total' => $sourcesCount,
+            'total_pages' => 100,
+            'maxId' => $maxId,
+            'minId' => $minId
+        ];
+        $this->set([
+            'sources' => $sources,
+            'meta' => $meta,
+            '_serialize' => ['sources', 'meta']
+        ]);
+    }
+
+    private function maxMinId($arr = null) {
+        $maxId = 0;
+        $minId = 0;
+        if (count($arr) > 0) {
+            $minId = $arr[0]['id'];
+            foreach($arr as $key=>$value) {
+                if ($value['id'] > $maxId) {
+                    $maxId = $value['id'];
+                }
+                if ($value['id'] < $minId) {
+                    $minId = $value['id'];
+                }
+            }
+        }
+        return [$maxId, $minId];
+    }
+    /**
+     * Index method
+     *
+     * @return void
+     */
+    public function index1()
     {
         $respondent_id = null;
         if (!empty($this->request->query['respondentID'])) {
@@ -46,7 +180,7 @@ class SourcesController extends AppController
             }
         }
 
-        $lastMinutes = 60;
+        $lastMinutes = 30;
         if (isset($this->request->query['lastminutes'])) {
             if (is_numeric($this->request->query['lastminutes'])) {
                 $lastMinutes = $this->request->query['lastminutes'];
@@ -59,8 +193,6 @@ class SourcesController extends AppController
         if (isset($this->request->query['query'])) {
             $query = trim($this->request->query['query']);
             if (!empty($query)) {
-                //$page = 1;
-                //$offset = 0;
                 $conditions[] = ['LOWER(info) LIKE' => '%' . strtolower($query) . '%'];
             }
         }
@@ -89,8 +221,21 @@ class SourcesController extends AppController
         $totalSources = $this->Sources->find()->where($conditions);
         $total = $totalSources->count();
 
+        // biggest id
+        $biggestId = $this->Sources->find()
+            ->where($conditions)
+            ->order(['twitTime' => 'DESC'])
+            ->first();
+        // lowest id
+        $lowestId = $this->Sources->find()
+            ->where($conditions)
+            ->order(['twitTime' => 'ASC'])
+            ->first();
+
         $meta = [
-            'total' => $total
+            'total' => $total,
+            'maxId' => $biggestId['id'],
+            'minId' => $lowestId['id']
         ];
         $this->set([
             'sources' => $sources,

@@ -136,7 +136,7 @@ class MarkersController extends AppController
                 $this->request->data['marker']['weather_id']);
 
             // post tweet
-            $this->convertPostToTweetFromSource($marker->id, $this->request->data['marker']['lat'], $this->request->data['marker']['lng'], $this->request->data['marker']['respondent_id']);
+            //$this->convertPostToTweetFromSource($marker->id, $this->request->data['marker']['lat'], $this->request->data['marker']['lng'], $this->request->data['marker']['respondent_id']);
 
             $this->set([
                 'marker' => $marker,
